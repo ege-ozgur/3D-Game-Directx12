@@ -1,0 +1,20 @@
+# TYPE   INFO(Placeholder)      POS(X,Y,Z)      ROT(X,Y,Z)      SCALE(X,Y,Z)
+
+# Plane 
+PLANE    PROCEDURAL             0.0 0.0 0.0     0.0 0.0 0.0     50.0 1.0 50.0
+
+# Walls 
+WALL     PROCEDURAL             0.0 5.0 20.0    1.57 0.0 0.0    20.0 1.0 5.0
+WALL     PROCEDURAL             0.0 5.0 -20.0   1.57 0.0 0.0    20.0 1.0 5.0
+WALL     PROCEDURAL             20.0 5.0 0.0    1.57 1.57 0.0   20.0 1.0 5.0
+WALL     PROCEDURAL             -20.0 5.0 0.0   1.57 1.57 0.0   20.0 1.0 5.0
+
+# Ruins
+WALL     PROCEDURAL             -10.0 2.5 5.0   1.57 0.0 0.0    5.0 1.0 2.5
+WALL     PROCEDURAL             -10.0 2.5 -5.0  1.57 0.0 0.0    5.0 1.0 2.5
+WALL     PROCEDURAL             10.0 2.5 0.0    1.57 1.57 0.0   5.0 1.0 2.5
+WALL     PROCEDURAL             0.0 1.5 8.0     1.57 0.0 0.0    3.0 1.0 1.5
+WALL     PROCEDURAL             3.0 1.5 -8.0    1.57 1.57 0.0   3.0 1.0 1.5
+
+# Enemies 
+DINO     Models/TRex.gem        0.0 0.0 15.0    0.0 3.14 0.0    0.01 0.01 0.01

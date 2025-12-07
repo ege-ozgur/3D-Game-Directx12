@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="3D Game - Directx12/3D Game - Directx12.vcxproj" Id="2a11116b-54b1-428c-9ae0-3a0117e1bf65" />
+</Solution>
