@@ -3,6 +3,7 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <vector>
+#include "DescriptorHeap.h"
 
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
@@ -65,8 +66,9 @@ public:
 	D3D12_VIEWPORT viewport;
 	D3D12_RECT scissorRect;
 	ID3D12RootSignature* rootSignature;
+	DescriptorHeap srvHeap;
 
-	~Core()   {
+	~Core() {
 		rootSignature->Release();
 		graphicsCommandList[0]->Release();
 		graphicsCommandAllocator[0]->Release();
@@ -81,7 +83,6 @@ public:
 
 	void initialize(HWND hwnd, int _width, int _height)
 	{
-
 		IDXGIFactory6* factory = NULL;
 		ID3D12Debug1* debug;
 		D3D12GetDebugInterface(IID_PPV_ARGS(&debug));
@@ -110,17 +111,19 @@ public:
 			}
 		}
 		adapter = adapters[useAdapterIndex];
-		
+
 		D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device));
+
+		srvHeap.init(device, 16384);
 
 		D3D12_COMMAND_QUEUE_DESC graphicsQueueDesc = {};
 		graphicsQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 		device->CreateCommandQueue(&graphicsQueueDesc, IID_PPV_ARGS(&graphicsQueue));
-		
+
 		D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
 		copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
 		device->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&copyQueue));
-		
+
 		D3D12_COMMAND_QUEUE_DESC computeQueueDesc = {};
 		computeQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 		device->CreateCommandQueue(&computeQueueDesc, IID_PPV_ARGS(&computeQueue));
@@ -134,7 +137,7 @@ public:
 			IID_PPV_ARGS(&graphicsCommandAllocator[1]));
 		device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
 			IID_PPV_ARGS(&graphicsCommandList[1]));
-		
+
 		graphicsCommandList[0]->Close();
 		graphicsCommandList[1]->Close();
 
@@ -142,7 +145,7 @@ public:
 		scDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		scDesc.Width = _width;
 		scDesc.Height = _height;
-		scDesc.SampleDesc.Count = 1; // MSAA here
+		scDesc.SampleDesc.Count = 1;
 		scDesc.SampleDesc.Quality = 0;
 		scDesc.BufferCount = 2;
 		scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -167,7 +170,7 @@ public:
 			device->CreateRenderTargetView(backbuffers[i], nullptr, renderTargetViewHandle);
 			renderTargetViewHandle.ptr += renderTargetViewDescriptorSize;
 		}
-		
+
 		graphicsQueueFence[0].create(device);
 		graphicsQueueFence[1].create(device);
 
@@ -220,23 +223,49 @@ public:
 		scissorRect.right = _width;
 		scissorRect.bottom = _height;
 
-		D3D12_ROOT_PARAMETER params[2] = {};
+		D3D12_DESCRIPTOR_RANGE srvRange = {};
+		srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		srvRange.NumDescriptors = 1;
+		srvRange.BaseShaderRegister = 0;
+		srvRange.RegisterSpace = 0;
+		srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		// VS constant buffer (b0)
+		D3D12_ROOT_PARAMETER params[3];
 		params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		params[0].Descriptor.ShaderRegister = 0; // b0
+		params[0].Descriptor.ShaderRegister = 0;
 		params[0].Descriptor.RegisterSpace = 0;
 		params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
-		// PS constant buffer (b1)
 		params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		params[1].Descriptor.ShaderRegister = 1; // b1
+		params[1].Descriptor.ShaderRegister = 1;
 		params[1].Descriptor.RegisterSpace = 0;
 		params[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
+		params[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		params[2].DescriptorTable.NumDescriptorRanges = 1;
+		params[2].DescriptorTable.pDescriptorRanges = &srvRange;
+		params[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		D3D12_STATIC_SAMPLER_DESC staticSampler = {};
+		staticSampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		staticSampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		staticSampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		staticSampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		staticSampler.MipLODBias = 0;
+		staticSampler.MaxAnisotropy = 1;
+		staticSampler.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		staticSampler.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+		staticSampler.MinLOD = 0.0f;
+		staticSampler.MaxLOD = D3D12_FLOAT32_MAX;
+		staticSampler.ShaderRegister = 0;
+		staticSampler.RegisterSpace = 0;
+		staticSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
 		D3D12_ROOT_SIGNATURE_DESC rsDesc = {};
-		rsDesc.NumParameters = 2;
+		rsDesc.NumParameters = 3;
 		rsDesc.pParameters = params;
+		rsDesc.NumStaticSamplers = 1;
+		rsDesc.pStaticSamplers = &staticSampler;
 		rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
@@ -247,6 +276,10 @@ public:
 
 		D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1,
 			&serialized, &error);
+
+		if (error) {
+			OutputDebugStringA((char*)error->GetBufferPointer());
+		}
 
 		device->CreateRootSignature(
 			0,
@@ -357,26 +390,8 @@ public:
 		getCommandList()->RSSetViewports(1, &viewport);
 		getCommandList()->RSSetScissorRects(1, &scissorRect);
 		getCommandList()->SetGraphicsRootSignature(rootSignature);
-	}
-
-	void createRootSignature() {
-		std::vector<D3D12_ROOT_PARAMETER> parameters;
-		D3D12_ROOT_PARAMETER rootParameterCBVS;
-		rootParameterCBVS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameterCBVS.Descriptor.ShaderRegister = 0; // Register(b0)
-		rootParameterCBVS.Descriptor.RegisterSpace = 0;
-		rootParameterCBVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-		parameters.push_back(rootParameterCBVS);
-		D3D12_ROOT_PARAMETER rootParameterCBPS;
-		rootParameterCBPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameterCBPS.Descriptor.ShaderRegister = 0; // Register(b0)
-		rootParameterCBPS.Descriptor.RegisterSpace = 0;
-		rootParameterCBPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		parameters.push_back(rootParameterCBPS);
-		D3D12_ROOT_SIGNATURE_DESC desc = {};
-		desc.NumParameters = parameters.size();
-		desc.pParameters = &parameters[0];
-		desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+		ID3D12DescriptorHeap* heaps[] = { srvHeap.heap };
+		getCommandList()->SetDescriptorHeaps(1, heaps);
 	}
 
 	int frameIndex()
@@ -384,4 +399,3 @@ public:
 		return swapchain->GetCurrentBackBufferIndex();
 	}
 };
-

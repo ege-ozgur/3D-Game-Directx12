@@ -14,6 +14,7 @@
 #include "AnimatedMesh.h"
 #include "Animation.h"
 #include "Player.h"
+#include "TextureManager.h"
 #include <chrono>
 #include <vector>
 #include <cmath>
@@ -53,6 +54,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 	ShaderManager shaderMgr;
 	PSOManager psoMgr;
+	TextureManager texMgr;
 
 	Plane planeModel;
 
@@ -73,7 +75,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	core.initialize(win.hwnd, 1024, 1024);
 
 	planeModel.init(&core);
-	dinoModel.load(&core, "Models/TRex.gem", &psoMgr, &shaderMgr);
+	dinoModel.load(&core, "Models/TRex.gem", &psoMgr, &shaderMgr, &texMgr);
 
 	characterAnim.init(&dinoModel.animation, 0);
 	characterAnim.usingAnimation = "run";
@@ -207,7 +209,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 			staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp);
 		}
 
-		dinoModel.draw(&core, &psoMgr, &shaderMgr, &characterAnim, vp, worldEnemy);
+		dinoModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &characterAnim, vp, worldEnemy);
 
 		Matrix charS, charR, charT;
 		charS.scaling(Vec3(0.005f, 0.005f, 0.005f));
@@ -215,7 +217,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		charT.translation(player.position);
 
 		Matrix characterWorld = charS * charR * charT;
-		dinoModel.draw(&core, &psoMgr, &shaderMgr, &characterAnim, vp, characterWorld);
+		dinoModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &characterAnim, vp, characterWorld);
 
 		core.finishFrame();
 	}

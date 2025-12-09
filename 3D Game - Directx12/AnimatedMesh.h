@@ -11,6 +11,7 @@
 #include "Vertex.h"
 #include "ConstantBuffer.h" 
 #include "ShaderReflection.h" 
+#include "TextureManager.h"
 
 class AnimatedMesh
 {
@@ -25,7 +26,7 @@ public:
         for (auto m : meshes) delete m;
     }
 
-    void load(Core* core, std::string filename, PSOManager* psos, ShaderManager* shaderMgr)
+    void load(Core* core, std::string filename, PSOManager* psos, ShaderManager* shaderMgr, TextureManager* textureMgr)
     {
         GEMLoader::GEMModelLoader loader;
         std::vector<GEMLoader::GEMMesh> gemmeshes;
@@ -42,12 +43,18 @@ public:
                 memcpy(&v, &gemmeshes[i].verticesAnimated[j], sizeof(ANIMATED_VERTEX));
                 vertices.push_back(v);
             }
+
+            string texName = gemmeshes[i].material.find("albedo").getValue();
+            textureFilenames.push_back(texName);
+
+            textureMgr->load(core, texName);
+
             mesh->init(core, vertices, gemmeshes[i].indices);
             meshes.push_back(mesh);
         }
 
-        ID3DBlob* vsBlob = shaderMgr->loadVS("AnimatedUntexturedVS", "animVertexShader.hlsl");
-        ID3DBlob* psBlob = shaderMgr->loadPS("AnimatedUntexturedPS", "pixelShader.hlsl");
+        ID3DBlob* vsBlob = shaderMgr->loadVS("AnimatedModelVS", "animVertexShader.hlsl");
+        ID3DBlob* psBlob = shaderMgr->loadPS("AnimatedModelPS", "animPixelShader.hlsl");
 
         psos->createPSO(core, "AnimatedModelPSO", vsBlob, psBlob, VertexLayoutCache::getAnimatedLayout());
 
@@ -100,7 +107,7 @@ public:
         }
     }
 
-    void draw(Core* core, PSOManager* psos, ShaderManager* shaderMgr, AnimationInstance* instance, Matrix& vp, Matrix& w)
+    void draw(Core* core, PSOManager* psos, ShaderManager* shaderMgr, TextureManager* textures, AnimationInstance* instance, Matrix& vp, Matrix& w)
     {
         psos->bind(core, "AnimatedModelPSO");
 
@@ -114,6 +121,10 @@ public:
 
         for (int i = 0; i < meshes.size(); i++)
         {
+            int textureIndex = textures->find(textureFilenames[i]);
+            if (textureIndex != -1) {
+                shaderMgr->updateTexturePS(core, "AnimatedModelPS", "tex", textureIndex);
+            }
             meshes[i]->draw(core);
         }
 

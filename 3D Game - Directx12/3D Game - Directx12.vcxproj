@@ -134,11 +134,11 @@
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="Cube.h" />
+    <ClInclude Include="DescriptorHeap.h" />
     <ClInclude Include="GamesEngineeringBase.h" />
     <ClInclude Include="GEMLoader.h" />
     <ClInclude Include="maths.h" />
     <ClInclude Include="Mesh.h" />
-    <ClInclude Include="Model.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PSOManager.h" />
@@ -146,10 +146,17 @@
     <ClInclude Include="ShaderReflection.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="StaticMesh.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="animPixelShader.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="animVertexShader.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
