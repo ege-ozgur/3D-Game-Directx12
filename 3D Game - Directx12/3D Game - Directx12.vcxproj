@@ -141,6 +141,7 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="PlayerAnimManager.h" />
     <ClInclude Include="PSOManager.h" />
     <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="ShaderReflection.h" />

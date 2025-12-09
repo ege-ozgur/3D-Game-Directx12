@@ -15,6 +15,7 @@
 #include "Animation.h"
 #include "Player.h"
 #include "TextureManager.h"
+#include "PlayerAnimManager.h"
 #include <chrono>
 #include <vector>
 #include <cmath>
@@ -41,192 +42,224 @@ public:
 };
 
 struct RenderItem {
-	StaticMesh* mesh;
-	Matrix transform;
-	AABB collider;
+    StaticMesh* mesh;
+    Matrix transform;
+    AABB collider;
 };
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
-	Window win;
-	Core core;
-	Timer tim;
+    Window win;
+    Core core;
+    Timer tim;
 
-	ShaderManager shaderMgr;
-	PSOManager psoMgr;
-	TextureManager texMgr;
+    ShaderManager shaderMgr;
+    PSOManager psoMgr;
+    TextureManager texMgr;
 
-	Plane planeModel;
+    Plane planeModel;
 
-	AnimatedMesh dinoModel;
-	AnimationInstance characterAnim;
-	Player player;
+    AnimatedMesh dinoModel;
+    AnimatedMesh characterModel;
+    AnimationInstance dinoAnim;
+    AnimationInstance characterAnim;
 
-	map<string, StaticMesh*> meshCache;
-	vector<RenderItem> staticRenderList;
-	vector<AABB> obstacles;
+    Player player;
+    PlayerAnimManager playerAnimMgr;
 
-	vector<Matrix> wallMatrices;
+    map<string, StaticMesh*> meshCache;
+    vector<RenderItem> staticRenderList;
+    vector<AABB> obstacles;
+    vector<Matrix> wallMatrices;
 
-	Matrix worldPlane;
-	Matrix worldEnemy;
+    Matrix worldPlane;
+    Matrix worldEnemy;
 
-	win.initialize(1024, 1024, "Game Scene");
-	core.initialize(win.hwnd, 1024, 1024);
+    win.initialize(1024, 1024, "Game Scene");
+    core.initialize(win.hwnd, 1024, 1024);
 
-	planeModel.init(&core);
-	dinoModel.load(&core, "Models/TRex.gem", &psoMgr, &shaderMgr, &texMgr);
+    planeModel.init(&core);
+    dinoModel.load(&core, "Models/TRex.gem", &psoMgr, &shaderMgr, &texMgr);
+    characterModel.load(&core, "Models/AutomaticCarbine.gem", &psoMgr, &shaderMgr, &texMgr);
 
-	characterAnim.init(&dinoModel.animation, 0);
-	characterAnim.usingAnimation = "run";
-	characterAnim.t = 0;
+    dinoAnim.init(&dinoModel.animation, 0);
+    dinoAnim.usingAnimation = "run";
+    dinoAnim.t = 0;
 
-	player.init(Vec3(0, 0, -10));
-	ShowCursor(FALSE);
+    characterAnim.init(&characterModel.animation, 0);
+    playerAnimMgr.init(&characterAnim); 
 
-	worldPlane.scaling(Vec3(50.0f, 1.0f, 50.0f));
-	worldPlane.translation(Vec3(0.0f, -0.1f, 0.0f));
+    player.init(Vec3(0, 0, -10));
 
-	Matrix eS, eR, eT;
-	eS.scaling(Vec3(0.01f, 0.01f, 0.01f));
-	eR.rotationX(0);
-	eT.translation(Vec3(0.0f, 0.0f, 10.0f));
-	worldEnemy = eS * eR * eT;
+    ShowCursor(FALSE);
 
-	ifstream file("LevelData.txt");
+    worldPlane.scaling(Vec3(50.0f, 1.0f, 50.0f));
+    worldPlane.translation(Vec3(0.0f, -0.1f, 0.0f));
 
-	if (file.is_open())
-	{
-		string line;
-		while (getline(file, line))
-		{
-			if (line.empty() || line[0] == '#') 
-				continue;
+    Matrix eS, eR, eT;
+    eS.scaling(Vec3(0.01f, 0.01f, 0.01f));
+    eR.rotationX(0);
+    eT.translation(Vec3(0.0f, 0.0f, 10.0f));
+    worldEnemy = eS * eR * eT;
 
-			stringstream ss(line);
-			string type, path;
-			Vec3 pos, rot, sc;
+    ifstream file("LevelData.txt");
 
-			ss >> type >> path >> pos.x >> pos.y >> pos.z >> rot.x >> rot.y >> rot.z >> sc.x >> sc.y >> sc.z;
+    if (file.is_open())
+    {
+        string line;
+        while (getline(file, line))
+        {
+            if (line.empty() || line[0] == '#')
+                continue;
 
-			Matrix S, RX, RY, T;
-			S.scaling(sc);
-			RX.rotationX(rot.x);
-			RY.rotAroundY(rot.y);
-			Matrix R = RX * RY;
-			T.translation(pos);
+            stringstream ss(line);
+            string type, path;
+            Vec3 pos, rot, sc;
 
-			Matrix worldMatrix = S * R * T;
+            ss >> type >> path
+                >> pos.x >> pos.y >> pos.z
+                >> rot.x >> rot.y >> rot.z
+                >> sc.x >> sc.y >> sc.z;
 
-			if (type == "TREE")
-			{
-				if (meshCache.find(path) == meshCache.end())
-				{
-					StaticMesh* newMesh = new StaticMesh();
-					newMesh->init(&core, path);
-					meshCache[path] = newMesh;
-				}
+            Matrix S, RX, RY, T;
+            S.scaling(sc);
+            RX.rotationX(rot.x);
+            RY.rotAroundY(rot.y);
+            Matrix R = RX * RY;
+            T.translation(pos);
 
-				RenderItem item;
-				item.mesh = meshCache[path];
-				item.transform = worldMatrix;
+            Matrix worldMatrix = S * R * T;
 
-				item.collider.position = pos;
-				item.collider.position.y += 5.0f;
-				item.collider.size = Vec3(1.0f, 10.0f, 1.0f);
+            if (type == "TREE")
+            {
+                if (meshCache.find(path) == meshCache.end())
+                {
+                    StaticMesh* newMesh = new StaticMesh();
+                    newMesh->init(&core, path);
+                    meshCache[path] = newMesh;
+                }
 
-				staticRenderList.push_back(item);
-				obstacles.push_back(item.collider);
-			}
-			else if (type == "PLANE")
-			{
-				worldPlane = worldMatrix;
-			}
-			else if (type == "DINO")
-			{
-				worldEnemy = worldMatrix;
-			}
-			else if (type == "WALL")
-			{
-				wallMatrices.push_back(worldMatrix);
+                RenderItem item;
+                item.mesh = meshCache[path];
+                item.transform = worldMatrix;
 
-				AABB wallCollider;
-				wallCollider.position = pos;
+                item.collider.position = pos;
+                item.collider.position.y += 5.0f;
+                item.collider.size = Vec3(1.0f, 10.0f, 1.0f);
 
-				if (abs(rot.y) < 0.1) 
-					wallCollider.size = Vec3(sc.x * 2.0f, sc.z * 2.0f, 1.0f);
-				else 
-					wallCollider.size = Vec3(1.0f, sc.z * 2.0f, sc.x * 2.0f);
+                staticRenderList.push_back(item);
+                obstacles.push_back(item.collider);
+            }
+            else if (type == "PLANE")
+            {
+                worldPlane = worldMatrix;
+            }
+            else if (type == "DINO")
+            {
+                worldEnemy = worldMatrix;
+            }
+            else if (type == "WALL")
+            {
+                wallMatrices.push_back(worldMatrix);
 
-				obstacles.push_back(wallCollider);
-			}
-		}
-		file.close();
-	}
+                AABB wallCollider;
+                wallCollider.position = pos;
 
-	float mapLimit = 48.0f;
-	float wallThick = 10.0f;
-	float wallH = 100.0f;
+                if (abs(rot.y) < 0.1f)
+                    wallCollider.size = Vec3(sc.x * 2.0f, sc.z * 2.0f, 1.0f);
+                else
+                    wallCollider.size = Vec3(1.0f, sc.z * 2.0f, sc.x * 2.0f);
 
-	AABB wN = { Vec3(0, 0, mapLimit + 5), Vec3(100, wallH, wallThick) };
-	obstacles.push_back(wN);
-	AABB wS = { Vec3(0, 0, -(mapLimit + 5)), Vec3(100, wallH, wallThick) };
-	obstacles.push_back(wS);
-	AABB wE = { Vec3(mapLimit + 5, 0, 0), Vec3(wallThick, wallH, 100) };
-	obstacles.push_back(wE);
-	AABB wW = { Vec3(-(mapLimit + 5), 0, 0), Vec3(wallThick, wallH, 100) };
-	obstacles.push_back(wW);
+                obstacles.push_back(wallCollider);
+            }
+        }
+        file.close();
+    }
 
+    float mapLimit = 48.0f;
+    float wallThick = 10.0f;
+    float wallH = 100.0f;
 
-	while (true)
-	{
-		core.beginFrame();
-		win.processMessages();
+    AABB wN = { Vec3(0, 0,  mapLimit + 5), Vec3(100, wallH, wallThick) };
+    AABB wS = { Vec3(0, 0, -mapLimit - 5), Vec3(100, wallH, wallThick) };
+    AABB wE = { Vec3(mapLimit + 5, 0, 0), Vec3(wallThick, wallH, 100) };
+    AABB wW = { Vec3(-mapLimit - 5, 0, 0), Vec3(wallThick, wallH, 100) };
 
-		if (win.keys[VK_ESCAPE]) {
-			break;
-		}
+    obstacles.push_back(wN);
+    obstacles.push_back(wS);
+    obstacles.push_back(wE);
+    obstacles.push_back(wW);
 
-		core.beginRenderPass();
-		float dt = tim.dt();
+    while (true)
+    {
+        core.beginFrame();
+        win.processMessages();
 
-		player.update(dt, &win, obstacles);
-		characterAnim.update("run", dt);
+        if (win.keys[VK_ESCAPE])
+            break;
 
-		float aspect = (float)win.width / (float)win.height;
-		Matrix p;
-		p = p.perspectiveProjection(aspect, 60, 0.1f, 5000);
-		Matrix v = player.getViewMatrix();
-		Matrix vp = v * p;
+        core.beginRenderPass();
+        float dt = tim.dt();
 
-		planeModel.draw(&core, worldPlane, vp);
+        player.update(dt, &win, obstacles);
 
-		for (int i = 0; i < wallMatrices.size(); i++) {
-			planeModel.draw(&core, wallMatrices[i], vp);
-		}
+        playerAnimMgr.update(dt, player);
 
-		for (int i = 0; i < staticRenderList.size(); i++) {
-			staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp);
-		}
+        if (player.isReloading && playerAnimMgr.isCurrentActionFinished()) {
+            player.completeReload(); 
+        }
 
-		dinoModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &characterAnim, vp, worldEnemy);
+        dinoAnim.update("run", dt);
 
-		Matrix charS, charR, charT;
-		charS.scaling(Vec3(0.005f, 0.005f, 0.005f));
-		charR.rotAroundY(player.rotation.y);
-		charT.translation(player.position);
+        float aspect = (float)win.width / (float)win.height;
+        Matrix p;
+        p = p.perspectiveProjection(aspect, 60.0f, 0.1f, 5000.0f);
 
-		Matrix characterWorld = charS * charR * charT;
-		dinoModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &characterAnim, vp, characterWorld);
+        Matrix v = player.getViewMatrix();
+        Matrix vp = v * p;
 
-		core.finishFrame();
-	}
+        planeModel.draw(&core, worldPlane, vp);
 
-	for (auto const& [key, val] : meshCache) {
-		delete val;
-	}
+        for (int i = 0; i < wallMatrices.size(); i++)
+            planeModel.draw(&core, wallMatrices[i], vp);
 
-	ShowCursor(TRUE);
-	core.flushGraphicsQueue();
-	return 0;
+        for (int i = 0; i < staticRenderList.size(); i++)
+            staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp);
+
+        dinoModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &dinoAnim, vp, worldEnemy);
+
+        Matrix identityView;
+
+        Matrix weaponVP = identityView * p;
+
+        Matrix gunS;
+        gunS.scaling(Vec3(0.02f, 0.02f, 0.02f));
+
+        Matrix gunR;
+        gunR.rotAroundY(3.14159f);
+
+        Matrix gunT;
+        gunT.translation(Vec3(0.05f, -0.07f, 0.15f));
+
+        Matrix gunWorld = gunS * gunR * gunT;
+
+        characterModel.draw(
+            &core,
+            &psoMgr,
+            &shaderMgr,
+            &texMgr,
+            &characterAnim,
+            weaponVP,
+            gunWorld
+        );
+
+        core.finishFrame();
+    }
+
+    for (auto const& [key, val] : meshCache)
+        delete val;
+
+    ShowCursor(TRUE);
+    core.flushGraphicsQueue();
+    return 0;
 }
