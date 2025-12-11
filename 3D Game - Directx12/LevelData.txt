@@ -17,4 +17,7 @@ WALL     PROCEDURAL             0.0 1.5 8.0     1.57 0.0 0.0    3.0 1.0 1.5
 WALL     PROCEDURAL             3.0 1.5 -8.0    1.57 1.57 0.0   3.0 1.0 1.5
 
 # Enemies 
-DINO     Models/TRex.gem        0.0 0.0 15.0    0.0 3.14 0.0    0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem    0.0 1.0 10.0     0.0 0.0 0.0    0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem    -6.0 1.0 12.0    0.0 0.0 0.0    0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem    10.0 1.0 15.0    0.0 0.0 0.0    0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem    0.0 1.0 18.0     0.0 0.0 0.0    0.01 0.01 0.01

@@ -24,7 +24,7 @@ public:
     bool isMoving = false;
 
     float health = 100.0f;
-    float speed = 15.0f;
+    float speed = 10.0f;
     float mouseSensitivity = 0.002f;
     float eyeHeight = 1.7f;
     Vec3 colliderSize = Vec3(2.0f, 4.0f, 2.0f);
@@ -42,6 +42,32 @@ public:
         isReloading = true;
     }
 
+    Vec3 getCrosshairTarget(const std::vector<AABB>& walls, float maxDist = 1000.0f) {
+        Vec3 camPos = getCameraPos();
+
+        Vec3 forward;
+        forward.x = sinf(rotation.y) * cosf(rotation.x);
+        forward.y = -sinf(rotation.x);
+        forward.z = cosf(rotation.y) * cosf(rotation.x);
+        forward.normalize();
+
+        Vec3 targetPoint = camPos + (forward * maxDist);
+        float closestDist = maxDist;
+
+        Ray ray(camPos, forward);
+
+        for (const auto& wall : walls) {
+            float t = 0.0f;
+            if (wall.rayAABB(ray, t)) {
+                if (t < closestDist) {
+                    closestDist = t;
+                    targetPoint = ray.at(t);
+                }
+            }
+        }
+        return targetPoint;
+    }
+
     void completeReload() {
         isReloading = false;
 
@@ -54,6 +80,15 @@ public:
             currentAmmo += totalAmmo;
             totalAmmo = 0;
         }
+    }
+
+    AABB getAABB(Vec3 pos) {
+        Vec3 halfSize = colliderSize * 0.5f;
+
+        Vec3 min = Vec3(pos.x - halfSize.x, pos.y, pos.z - halfSize.z);
+        Vec3 max = Vec3(pos.x + halfSize.x, pos.y + colliderSize.y, pos.z + halfSize.z);
+
+        return AABB(min, max);
     }
 
     void update(float dt, Window* win, const std::vector<AABB>& obstacles) {
@@ -128,10 +163,7 @@ public:
         Vec3 nextPosX = position;
         nextPosX.x += desiredMove.x;
 
-        AABB playerBoxX;
-        playerBoxX.position = nextPosX;
-        playerBoxX.position.y += (colliderSize.y * 0.5f);
-        playerBoxX.size = colliderSize;
+        AABB playerBoxX = getAABB(nextPosX);
 
         bool hitX = false;
         for (const auto& box : obstacles) {
@@ -145,10 +177,7 @@ public:
         Vec3 nextPosZ = position;
         nextPosZ.z += desiredMove.z;
 
-        AABB playerBoxZ;
-        playerBoxZ.position = nextPosZ;
-        playerBoxZ.position.y += (colliderSize.y * 0.5f);
-        playerBoxZ.size = colliderSize;
+        AABB playerBoxZ = getAABB(nextPosZ);
 
         bool hitZ = false;
         for (const auto& box : obstacles) {
@@ -180,5 +209,12 @@ public:
         Vec3 p = position;
         p.y += eyeHeight;
         return p;
+    }
+
+    Matrix getRotationMatrix() const {
+        Matrix rx, ry;
+        rx.rotationX(rotation.x); 
+        ry.rotAroundY(rotation.y);  
+        return rx * ry; 
     }
 };

@@ -1,8 +1,10 @@
 #pragma once
 #include "Animation.h"
 #include "Player.h"
+#include "BulletManager.h" 
 #include <string>
 #include <map>
+#include <vector>
 
 enum class PlayerState {
     IDLE,
@@ -14,17 +16,20 @@ enum class PlayerState {
 class PlayerAnimManager {
 private:
     AnimationInstance* targetAnimInstance = nullptr;
+    BulletManager* bulletManager = nullptr;
+
     PlayerState currentState = PlayerState::IDLE;
 
-    map<PlayerState, std::string> animMap;
-    map<PlayerState, float> durationMap;
+    std::map<PlayerState, std::string> animMap;
+    std::map<PlayerState, float> durationMap;
 
     bool isActionActive = false;
     float currentAnimTime = 0.0f;
 
 public:
-    void init(AnimationInstance* animInst) {
+    void init(AnimationInstance* animInst, BulletManager* bMgr) {
         targetAnimInstance = animInst;
+        bulletManager = bMgr;
 
         animMap[PlayerState::IDLE] = "04 idle";
         animMap[PlayerState::RUN] = "07 run";
@@ -53,7 +58,7 @@ public:
         return 0.0f;
     }
 
-    void update(float dt, const Player& player) {
+    void update(float dt, Player& player, const std::vector<AABB>& obstacles) {
         if (!targetAnimInstance) return;
 
         currentAnimTime += dt;
@@ -75,6 +80,16 @@ public:
             else if (player.isFiring) {
                 desiredState = PlayerState::FIRE;
                 isActionActive = true;
+                Vec3 targetPoint = player.getCrosshairTarget(obstacles);
+                Vec3 muzzleOffset(0.25f, -0.25f, 0.6f);
+                Matrix rotMat = player.getRotationMatrix();
+                Vec3 rotatedOffset = rotMat.mulVec(muzzleOffset);
+                Vec3 muzzlePos = player.getCameraPos() + rotatedOffset;
+                Vec3 bulletDir = (targetPoint - muzzlePos).normalize();
+
+                if (bulletManager) {
+                    bulletManager->spawnBullet(muzzlePos, bulletDir);
+                }
             }
             else if (player.isMoving) {
                 desiredState = PlayerState::RUN;

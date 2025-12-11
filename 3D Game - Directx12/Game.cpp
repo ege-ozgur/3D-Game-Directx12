@@ -16,6 +16,8 @@
 #include "Player.h"
 #include "TextureManager.h"
 #include "PlayerAnimManager.h"
+#include "EnemyManager.h"
+#include "BulletManager.h"
 #include <chrono>
 #include <vector>
 #include <cmath>
@@ -59,13 +61,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
     Plane planeModel;
 
-    AnimatedMesh dinoModel;
+    AnimatedMesh enemyModel;
     AnimatedMesh characterModel;
-    AnimationInstance dinoAnim;
+
+    Sphere bulletSphere;
+
     AnimationInstance characterAnim;
 
     Player player;
     PlayerAnimManager playerAnimMgr;
+    EnemyManager enemyMgr;
+    BulletManager bulletMgr;
 
     map<string, StaticMesh*> meshCache;
     vector<RenderItem> staticRenderList;
@@ -73,21 +79,23 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     vector<Matrix> wallMatrices;
 
     Matrix worldPlane;
-    Matrix worldEnemy;
 
     win.initialize(1024, 1024, "Game Scene");
     core.initialize(win.hwnd, 1024, 1024);
 
     planeModel.init(&core);
-    dinoModel.load(&core, "Models/TRex.gem", &psoMgr, &shaderMgr, &texMgr);
+
+    enemyModel.load(&core, "Models/Soldier1.gem", &psoMgr, &shaderMgr, &texMgr);
     characterModel.load(&core, "Models/AutomaticCarbine.gem", &psoMgr, &shaderMgr, &texMgr);
 
-    dinoAnim.init(&dinoModel.animation, 0);
-    dinoAnim.usingAnimation = "run";
-    dinoAnim.t = 0;
+    bulletSphere.init(&core, 12, 12, 1.0f);
 
     characterAnim.init(&characterModel.animation, 0);
-    playerAnimMgr.init(&characterAnim); 
+
+    bulletMgr.init(&bulletSphere);
+    playerAnimMgr.init(&characterAnim, &bulletMgr);
+
+    enemyMgr.init(&enemyModel);
 
     player.init(Vec3(0, 0, -10));
 
@@ -95,12 +103,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
     worldPlane.scaling(Vec3(50.0f, 1.0f, 50.0f));
     worldPlane.translation(Vec3(0.0f, -0.1f, 0.0f));
-
-    Matrix eS, eR, eT;
-    eS.scaling(Vec3(0.01f, 0.01f, 0.01f));
-    eR.rotationX(0);
-    eT.translation(Vec3(0.0f, 0.0f, 10.0f));
-    worldEnemy = eS * eR * eT;
 
     ifstream file("LevelData.txt");
 
@@ -143,9 +145,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
                 item.mesh = meshCache[path];
                 item.transform = worldMatrix;
 
-                item.collider.position = pos;
-                item.collider.position.y += 5.0f;
-                item.collider.size = Vec3(1.0f, 10.0f, 1.0f);
+                Vec3 colSize(1.0f, 10.0f, 1.0f);
+                Vec3 halfSize = colSize * 0.5f;
+                Vec3 centerPos = pos;
+                centerPos.y += 5.0f;
+
+                item.collider.min = centerPos - halfSize;
+                item.collider.max = centerPos + halfSize;
 
                 staticRenderList.push_back(item);
                 obstacles.push_back(item.collider);
@@ -154,21 +160,25 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
             {
                 worldPlane = worldMatrix;
             }
-            else if (type == "DINO")
+            else if (type == "ENEMY")
             {
-                worldEnemy = worldMatrix;
+                enemyMgr.spawnEnemy(pos, sc);
             }
             else if (type == "WALL")
             {
                 wallMatrices.push_back(worldMatrix);
 
                 AABB wallCollider;
-                wallCollider.position = pos;
+                Vec3 wallSize;
 
                 if (abs(rot.y) < 0.1f)
-                    wallCollider.size = Vec3(sc.x * 2.0f, sc.z * 2.0f, 1.0f);
+                    wallSize = Vec3(sc.x * 2.0f, sc.z * 2.0f, 1.0f);
                 else
-                    wallCollider.size = Vec3(1.0f, sc.z * 2.0f, sc.x * 2.0f);
+                    wallSize = Vec3(1.0f, sc.z * 2.0f, sc.x * 2.0f);
+
+                Vec3 halfSize = wallSize * 0.5f;
+                wallCollider.min = pos - halfSize;
+                wallCollider.max = pos + halfSize;
 
                 obstacles.push_back(wallCollider);
             }
@@ -180,10 +190,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     float wallThick = 10.0f;
     float wallH = 100.0f;
 
-    AABB wN = { Vec3(0, 0,  mapLimit + 5), Vec3(100, wallH, wallThick) };
-    AABB wS = { Vec3(0, 0, -mapLimit - 5), Vec3(100, wallH, wallThick) };
-    AABB wE = { Vec3(mapLimit + 5, 0, 0), Vec3(wallThick, wallH, 100) };
-    AABB wW = { Vec3(-mapLimit - 5, 0, 0), Vec3(wallThick, wallH, 100) };
+    Vec3 sizeN(100.0f, wallH, wallThick);
+    Vec3 posN(0.0f, 0.0f, mapLimit + 5.0f);
+    AABB wN(posN - sizeN * 0.5f, posN + sizeN * 0.5f);
+
+    Vec3 sizeS(100.0f, wallH, wallThick);
+    Vec3 posS(0.0f, 0.0f, -mapLimit - 5.0f);
+    AABB wS(posS - sizeS * 0.5f, posS + sizeS * 0.5f);
+
+    Vec3 sizeE(wallThick, wallH, 100.0f);
+    Vec3 posE(mapLimit + 5.0f, 0.0f, 0.0f);
+    AABB wE(posE - sizeE * 0.5f, posE + sizeE * 0.5f);
+
+    Vec3 sizeW(wallThick, wallH, 100.0f);
+    Vec3 posW(-mapLimit - 5.0f, 0.0f, 0.0f);
+    AABB wW(posW - sizeW * 0.5f, posW + sizeW * 0.5f);
 
     obstacles.push_back(wN);
     obstacles.push_back(wS);
@@ -203,13 +224,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
         player.update(dt, &win, obstacles);
 
-        playerAnimMgr.update(dt, player);
+        playerAnimMgr.update(dt, player, obstacles);
 
         if (player.isReloading && playerAnimMgr.isCurrentActionFinished()) {
-            player.completeReload(); 
+            player.completeReload();
         }
 
-        dinoAnim.update("run", dt);
+        enemyMgr.update(dt, player.position);
+        bulletMgr.update(dt, enemyMgr, obstacles);
 
         float aspect = (float)win.width / (float)win.height;
         Matrix p;
@@ -226,7 +248,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
         for (int i = 0; i < staticRenderList.size(); i++)
             staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp);
 
-        dinoModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &dinoAnim, vp, worldEnemy);
+        enemyMgr.draw(&core, &psoMgr, &shaderMgr, &texMgr, vp);
+
+        bulletMgr.draw(&core, vp);
 
         Matrix identityView;
 
