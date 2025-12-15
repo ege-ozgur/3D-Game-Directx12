@@ -1,6 +1,5 @@
-cbuffer staticMeshBuffer : register(b0)
+cbuffer SceneConstantBuffer : register(b0)
 {
-    float4x4 W;
     float4x4 VP;
 };
 
@@ -10,25 +9,23 @@ struct VS_INPUT
     float3 Normal : NORMAL;
     float3 Tangent : TANGENT;
     float2 TexCoords : TEXCOORD;
+    // Agaclarin patlamamasi icin row_major sart
+    row_major float4x4 World : WORLD;
 };
 
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
     float3 Normal : NORMAL;
-    float3 Tangent : TANGENT;
     float2 TexCoords : TEXCOORD;
 };
 
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
-
-    output.Pos = mul(input.Pos, W);
-    output.Pos = mul(output.Pos, VP);
-    output.Normal = mul(input.Normal, (float3x3) W);
-    output.Tangent = mul(input.Tangent, (float3x3) W);
+    float4 worldPos = mul(input.Pos, input.World);
+    output.Pos = mul(worldPos, VP);
+    output.Normal = normalize(mul(input.Normal, (float3x3) input.World));
     output.TexCoords = input.TexCoords;
-    
     return output;
 }

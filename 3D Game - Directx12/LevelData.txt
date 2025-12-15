@@ -1,23 +1,41 @@
 # TYPE   INFO(Placeholder)      POS(X,Y,Z)      ROT(X,Y,Z)      SCALE(X,Y,Z)
 
-# Plane 
-PLANE    PROCEDURAL             0.0 0.0 0.0     0.0 0.0 0.0     50.0 1.0 50.0
+# FLOOR
+PLANE    PROCEDURAL                     0.0 0.0 0.0     0.0 0.0 0.0     60.0 1.0 60.0
 
-# Walls 
-WALL     PROCEDURAL             0.0 5.0 20.0    1.57 0.0 0.0    20.0 1.0 5.0
-WALL     PROCEDURAL             0.0 5.0 -20.0   1.57 0.0 0.0    20.0 1.0 5.0
-WALL     PROCEDURAL             20.0 5.0 0.0    1.57 1.57 0.0   20.0 1.0 5.0
-WALL     PROCEDURAL             -20.0 5.0 0.0   1.57 1.57 0.0   20.0 1.0 5.0
+# WALL
 
-# Ruins
-WALL     PROCEDURAL             -10.0 2.5 5.0   1.57 0.0 0.0    5.0 1.0 2.5
-WALL     PROCEDURAL             -10.0 2.5 -5.0  1.57 0.0 0.0    5.0 1.0 2.5
-WALL     PROCEDURAL             10.0 2.5 0.0    1.57 1.57 0.0   5.0 1.0 2.5
-WALL     PROCEDURAL             0.0 1.5 8.0     1.57 0.0 0.0    3.0 1.0 1.5
-WALL     PROCEDURAL             3.0 1.5 -8.0    1.57 1.57 0.0   3.0 1.0 1.5
+# BACK WALLS (Z = 25.0)
+WALL     Models/Warehouse_Wall_01c.gem  -19.0 0.0 25.0  0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  -9.5 0.0 25.0   0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  0.0 0.0 25.0    0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  9.5 0.0 25.0    0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  19.0 0.0 25.0   0.0 1.57 0.0    1.0 6.0 5.5
 
-# Enemies 
-ENEMY    Models/Soldier1.gem    0.0 1.0 10.0     0.0 0.0 0.0    0.01 0.01 0.01
-ENEMY    Models/Soldier1.gem    -6.0 1.0 12.0    0.0 0.0 0.0    0.01 0.01 0.01
-ENEMY    Models/Soldier1.gem    10.0 1.0 15.0    0.0 0.0 0.0    0.01 0.01 0.01
-ENEMY    Models/Soldier1.gem    0.0 1.0 18.0     0.0 0.0 0.0    0.01 0.01 0.01
+# FRONT WALLS (Z = -25.0)
+WALL     Models/Warehouse_Wall_01c.gem  -19.0 0.0 -25.0 0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  -9.5 0.0 -25.0  0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  0.0 0.0 -25.0   0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  9.5 0.0 -25.0   0.0 1.57 0.0    1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  19.0 0.0 -25.0  0.0 1.57 0.0    1.0 6.0 5.5
+
+# LEFT WALLS (X = -25.0)
+WALL     Models/Warehouse_Wall_01c.gem  -25.0 0.0 19.0  0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  -25.0 0.0 9.5   0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  -25.0 0.0 0.0   0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  -25.0 0.0 -9.5  0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  -25.0 0.0 -19.0 0.0 0.0 0.0     1.0 6.0 5.5
+
+# RIGHT WALLS (X = 25.0)
+WALL     Models/Warehouse_Wall_01c.gem  25.0 0.0 19.0   0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  25.0 0.0 9.5    0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  25.0 0.0 0.0    0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  25.0 0.0 -9.5   0.0 0.0 0.0     1.0 6.0 5.5
+WALL     Models/Warehouse_Wall_01c.gem  25.0 0.0 -19.0  0.0 0.0 0.0     1.0 6.0 5.5
+
+#ENEMIES
+
+ENEMY    Models/Soldier1.gem            0.0 1.0 20.0    0.0 3.14 0.0    0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem            -15.0 1.0 15.0  0.0 0.0 0.0     0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem            15.0 1.0 15.0   0.0 0.0 0.0     0.01 0.01 0.01
+ENEMY    Models/Soldier1.gem            -5.0 1.0 0.0    0.0 1.0 0.0     0.01 0.01 0.01

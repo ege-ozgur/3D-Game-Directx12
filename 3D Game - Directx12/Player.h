@@ -2,7 +2,9 @@
 #include "Maths.h"
 #include "Core.h"
 #include "Window.h"
-#include "Collision.h" 
+#include "Collision.h"
+#include "AnimatedMesh.h"
+#include "Enemy.h" 
 #include <vector>
 #include <cmath>
 
@@ -36,21 +38,21 @@ public:
     }
 
     void startReload() {
-        if (isReloading || totalAmmo <= 0 || currentAmmo >= maxClipAmmo) {
-            return;
-        }          
+        if (isReloading || totalAmmo <= 0 || currentAmmo >= maxClipAmmo) return;
         isReloading = true;
     }
 
-    Vec3 getCrosshairTarget(const std::vector<AABB>& walls, float maxDist = 1000.0f) {
+    Vec3 getForward() const {
+        Vec3 f;
+        f.x = sinf(rotation.y) * cosf(rotation.x);
+        f.y = -sinf(rotation.x);
+        f.z = cosf(rotation.y) * cosf(rotation.x);
+        return f.normalize();
+    }
+
+    Vec3 getCrosshairTarget(const std::vector<AABB>& walls, const std::vector<Enemy>& enemies, float maxDist = 1000.0f) {
         Vec3 camPos = getCameraPos();
-
-        Vec3 forward;
-        forward.x = sinf(rotation.y) * cosf(rotation.x);
-        forward.y = -sinf(rotation.x);
-        forward.z = cosf(rotation.y) * cosf(rotation.x);
-        forward.normalize();
-
+        Vec3 forward = getForward();
         Vec3 targetPoint = camPos + (forward * maxDist);
         float closestDist = maxDist;
 
@@ -65,12 +67,51 @@ public:
                 }
             }
         }
+
+        for (const auto& enemy : enemies) {
+            if (enemy.isDead) continue;
+            float t = 0.0f;
+            if (enemy.collider.rayAABB(ray, t)) {
+                if (t < closestDist) {
+                    closestDist = t;
+                    targetPoint = ray.at(t);
+                }
+            }
+        }
         return targetPoint;
+    }
+
+    Enemy* checkShooting(const std::vector<AABB>& walls, std::vector<Enemy>& enemies, float maxDist = 1000.0f) {
+        Vec3 camPos = getCameraPos();
+        Vec3 forward = getForward();
+        Ray ray(camPos, forward);
+
+        float closestWallDist = maxDist;
+        for (const auto& wall : walls) {
+            float t = 0.0f;
+            if (wall.rayAABB(ray, t)) {
+                if (t < closestWallDist) closestWallDist = t;
+            }
+        }
+
+        Enemy* hitEnemy = nullptr;
+        float closestEnemyDist = closestWallDist;
+
+        for (auto& enemy : enemies) {
+            if (enemy.isDead) continue;
+            float t = 0.0f;
+            if (enemy.collider.rayAABB(ray, t)) {
+                if (t < closestEnemyDist) {
+                    closestEnemyDist = t;
+                    hitEnemy = &enemy;
+                }
+            }
+        }
+        return hitEnemy;
     }
 
     void completeReload() {
         isReloading = false;
-
         int needed = maxClipAmmo - currentAmmo;
         if (totalAmmo >= needed) {
             totalAmmo -= needed;
@@ -84,25 +125,17 @@ public:
 
     AABB getAABB(Vec3 pos) {
         Vec3 halfSize = colliderSize * 0.5f;
-
         Vec3 min = Vec3(pos.x - halfSize.x, pos.y, pos.z - halfSize.z);
         Vec3 max = Vec3(pos.x + halfSize.x, pos.y + colliderSize.y, pos.z + halfSize.z);
-
         return AABB(min, max);
     }
 
-    void update(float dt, Window* win, const std::vector<AABB>& obstacles) {
+    void update(float dt, Window* win, const std::vector<AABB>& walls, const std::vector<Enemy>& enemies) {
         if (fireTimer > 0.0f) fireTimer -= dt;
-
         isFiring = false;
 
-        if (currentAmmo <= 0 && totalAmmo > 0 && !isReloading) {
-            startReload();
-        }
-
-        if ((GetAsyncKeyState('R') & 0x8000) || win->keys['R']) {
-            startReload();
-        }
+        if (currentAmmo <= 0 && totalAmmo > 0 && !isReloading) startReload();
+        if ((GetAsyncKeyState('R') & 0x8000) || win->keys['R']) startReload();
 
         if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) && !isReloading && currentAmmo > 0 && fireTimer <= 0.0f) {
             isFiring = true;
@@ -120,18 +153,10 @@ public:
         if (GetForegroundWindow() == win->hwnd) {
             float deltaX = (float)(cursorPos.x - centerX);
             float deltaY = (float)(cursorPos.y - centerY);
-
             rotation.y += deltaX * mouseSensitivity;
             rotation.x += deltaY * mouseSensitivity;
-
-            if (rotation.x > 1.5f) {
-                rotation.x = 1.5f;
-            }
-                
-            if (rotation.x < -1.5f) {
-                rotation.x = -1.5f;
-            }
-                
+            if (rotation.x > 1.5f) rotation.x = 1.5f;
+            if (rotation.x < -1.5f) rotation.x = -1.5f;
             SetCursorPos(centerX, centerY);
         }
 
@@ -140,9 +165,7 @@ public:
         forwardFlat.y = 0;
         forwardFlat.z = cosf(rotation.y);
         forwardFlat.normalize();
-
         Vec3 rightFlat = forwardFlat.Cross(Vec3(0, 1, 0)).normalize();
-
         Vec3 moveDir(0, 0, 0);
 
         if (win->keys['W']) moveDir += forwardFlat;
@@ -162,59 +185,52 @@ public:
 
         Vec3 nextPosX = position;
         nextPosX.x += desiredMove.x;
-
         AABB playerBoxX = getAABB(nextPosX);
-
         bool hitX = false;
-        for (const auto& box : obstacles) {
-            if (AABB::check(playerBoxX, box)) {
-                hitX = true;
-                break;
+
+        for (const auto& box : walls) {
+            if (AABB::check(playerBoxX, box)) { hitX = true; break; }
+        }
+        if (!hitX) {
+            for (const auto& enemy : enemies) {
+                if (!enemy.isDead && AABB::check(playerBoxX, enemy.collider)) { hitX = true; break; }
             }
         }
         if (!hitX) position.x += desiredMove.x;
 
         Vec3 nextPosZ = position;
         nextPosZ.z += desiredMove.z;
-
         AABB playerBoxZ = getAABB(nextPosZ);
-
         bool hitZ = false;
-        for (const auto& box : obstacles) {
-            if (AABB::check(playerBoxZ, box)) {
-                hitZ = true;
-                break;
+
+        for (const auto& box : walls) {
+            if (AABB::check(playerBoxZ, box)) { hitZ = true; break; }
+        }
+        if (!hitZ) {
+            for (const auto& enemy : enemies) {
+                if (!enemy.isDead && AABB::check(playerBoxZ, enemy.collider)) { hitZ = true; break; }
             }
         }
         if (!hitZ) position.z += desiredMove.z;
     }
 
-    Matrix getViewMatrix() {
-        Vec3 eyePos = position;
-        eyePos.y += eyeHeight;
-
-        Vec3 lookDir;
-        lookDir.x = sinf(rotation.y) * cosf(rotation.x);
-        lookDir.y = -sinf(rotation.x);
-        lookDir.z = cosf(rotation.y) * cosf(rotation.x);
-        lookDir.normalize();
-
-        Vec3 target = eyePos + lookDir;
-
-        return Matrix::lookAtMatrix(eyePos, target, Vec3(0, 1, 0));
-    }
-
-    Vec3 getCameraPos() const
-    {
+    Vec3 getCameraPos() const {
         Vec3 p = position;
         p.y += eyeHeight;
         return p;
     }
 
+    Matrix getViewMatrix() {
+        Vec3 eyePos = position;
+        eyePos.y += eyeHeight;
+        Vec3 target = eyePos + getForward();
+        return Matrix::lookAtMatrix(eyePos, target, Vec3(0, 1, 0));
+    }
+
     Matrix getRotationMatrix() const {
         Matrix rx, ry;
-        rx.rotationX(rotation.x); 
-        ry.rotAroundY(rotation.y);  
-        return rx * ry; 
+        rx.rotationX(rotation.x);
+        ry.rotAroundY(rotation.y);
+        return rx * ry;
     }
 };

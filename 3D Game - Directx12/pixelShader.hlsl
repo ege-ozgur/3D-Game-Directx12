@@ -1,3 +1,6 @@
+Texture2D tex : register(t0); 
+SamplerState samplerLinear : register(s0); 
+
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
@@ -8,5 +11,11 @@ struct PS_INPUT
 
 float4 PS(PS_INPUT input) : SV_Target0
 {
-    return float4(abs(normalize(input.Normal)) * 0.9f, 1.0);
+    float4 textureColor = tex.Sample(samplerLinear, input.TexCoords);
+
+    float3 lightDir = normalize(float3(0.5, 1.0, -0.5));
+    
+    float diff = max(dot(normalize(input.Normal), lightDir), 0.2f); 
+
+    return float4(textureColor.rgb * diff, 1.0f);
 }

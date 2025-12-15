@@ -18,9 +18,11 @@
 #include "PlayerAnimManager.h"
 #include "EnemyManager.h"
 #include "BulletManager.h"
+#include "Crosshair.h" 
 #include <chrono>
 #include <vector>
 #include <cmath>
+#include <map> 
 
 using namespace std;
 
@@ -60,6 +62,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     TextureManager texMgr;
 
     Plane planeModel;
+    Crosshair crosshair;
 
     AnimatedMesh enemyModel;
     AnimatedMesh characterModel;
@@ -76,7 +79,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     map<string, StaticMesh*> meshCache;
     vector<RenderItem> staticRenderList;
     vector<AABB> obstacles;
-    vector<Matrix> wallMatrices;
 
     Matrix worldPlane;
 
@@ -84,6 +86,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     core.initialize(win.hwnd, 1024, 1024);
 
     planeModel.init(&core);
+    crosshair.init(&core);
 
     enemyModel.load(&core, "Models/Soldier1.gem", &psoMgr, &shaderMgr, &texMgr);
     characterModel.load(&core, "Models/AutomaticCarbine.gem", &psoMgr, &shaderMgr, &texMgr);
@@ -94,7 +97,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
     bulletMgr.init(&bulletSphere);
     playerAnimMgr.init(&characterAnim, &bulletMgr);
-
     enemyMgr.init(&enemyModel);
 
     player.init(Vec3(0, 0, -10));
@@ -137,7 +139,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
                 if (meshCache.find(path) == meshCache.end())
                 {
                     StaticMesh* newMesh = new StaticMesh();
-                    newMesh->init(&core, path);
+                    newMesh->init(&core, path, &texMgr);
                     meshCache[path] = newMesh;
                 }
 
@@ -166,21 +168,39 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
             }
             else if (type == "WALL")
             {
-                wallMatrices.push_back(worldMatrix);
+                if (meshCache.find(path) == meshCache.end())
+                {
+                    StaticMesh* newMesh = new StaticMesh();
+                    newMesh->init(&core, path, &texMgr);
+                    meshCache[path] = newMesh;
+                }
 
-                AABB wallCollider;
-                Vec3 wallSize;
+                RenderItem item;
+                item.mesh = meshCache[path];
+                item.transform = worldMatrix;
 
-                if (abs(rot.y) < 0.1f)
-                    wallSize = Vec3(sc.x * 2.0f, sc.z * 2.0f, 1.0f);
-                else
-                    wallSize = Vec3(1.0f, sc.z * 2.0f, sc.x * 2.0f);
+                float baseThickness = 2.0f;
+                float baseHeight = 5.0f;
+                float baseWidth = 4.0f;
 
-                Vec3 halfSize = wallSize * 0.5f;
-                wallCollider.min = pos - halfSize;
-                wallCollider.max = pos + halfSize;
+                float w = baseThickness * sc.x;
+                float h = baseHeight * sc.y;
+                float d = baseWidth * sc.z;
 
-                obstacles.push_back(wallCollider);
+                if (abs(rot.y) > 0.1f)
+                    std::swap(w, d);
+
+                Vec3 colSize(w, h, d);
+                Vec3 halfSize = colSize * 0.5f;
+
+                Vec3 centerPos = pos;
+                centerPos.y += halfSize.y;
+
+                item.collider.min = centerPos - halfSize;
+                item.collider.max = centerPos + halfSize;
+
+                staticRenderList.push_back(item);
+                obstacles.push_back(item.collider);
             }
         }
         file.close();
@@ -193,38 +213,28 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     Vec3 sizeN(100.0f, wallH, wallThick);
     Vec3 posN(0.0f, 0.0f, mapLimit + 5.0f);
     AABB wN(posN - sizeN * 0.5f, posN + sizeN * 0.5f);
-
-    Vec3 sizeS(100.0f, wallH, wallThick);
-    Vec3 posS(0.0f, 0.0f, -mapLimit - 5.0f);
-    AABB wS(posS - sizeS * 0.5f, posS + sizeS * 0.5f);
-
-    Vec3 sizeE(wallThick, wallH, 100.0f);
-    Vec3 posE(mapLimit + 5.0f, 0.0f, 0.0f);
-    AABB wE(posE - sizeE * 0.5f, posE + sizeE * 0.5f);
-
-    Vec3 sizeW(wallThick, wallH, 100.0f);
-    Vec3 posW(-mapLimit - 5.0f, 0.0f, 0.0f);
-    AABB wW(posW - sizeW * 0.5f, posW + sizeW * 0.5f);
-
     obstacles.push_back(wN);
-    obstacles.push_back(wS);
-    obstacles.push_back(wE);
-    obstacles.push_back(wW);
 
     while (true)
     {
         core.beginFrame();
         win.processMessages();
 
-        if (win.keys[VK_ESCAPE])
+        if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) 
             break;
 
         core.beginRenderPass();
         float dt = tim.dt();
 
-        player.update(dt, &win, obstacles);
+        if (player.isFiring) {
+            Enemy* hitEnemy = player.checkShooting(obstacles, enemyMgr.getEnemies());
+            if (hitEnemy != nullptr) {
+                hitEnemy->takeDamage();
+            }
+        }
 
-        playerAnimMgr.update(dt, player, obstacles);
+        player.update(dt, &win, obstacles, enemyMgr.getEnemies());
+        playerAnimMgr.update(dt, player, obstacles, enemyMgr.getEnemies());
 
         if (player.isReloading && playerAnimMgr.isCurrentActionFinished()) {
             player.completeReload();
@@ -242,40 +252,26 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
         planeModel.draw(&core, worldPlane, vp);
 
-        for (int i = 0; i < wallMatrices.size(); i++)
-            planeModel.draw(&core, wallMatrices[i], vp);
-
         for (int i = 0; i < staticRenderList.size(); i++)
-            staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp);
+            staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp, &texMgr);
 
         enemyMgr.draw(&core, &psoMgr, &shaderMgr, &texMgr, vp);
-
         bulletMgr.draw(&core, vp);
 
         Matrix identityView;
-
         Matrix weaponVP = identityView * p;
 
         Matrix gunS;
         gunS.scaling(Vec3(0.02f, 0.02f, 0.02f));
-
         Matrix gunR;
         gunR.rotAroundY(3.14159f);
-
         Matrix gunT;
         gunT.translation(Vec3(0.05f, -0.07f, 0.15f));
-
         Matrix gunWorld = gunS * gunR * gunT;
 
-        characterModel.draw(
-            &core,
-            &psoMgr,
-            &shaderMgr,
-            &texMgr,
-            &characterAnim,
-            weaponVP,
-            gunWorld
-        );
+        characterModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &characterAnim, weaponVP, gunWorld);
+
+        crosshair.draw(&core);
 
         core.finishFrame();
     }

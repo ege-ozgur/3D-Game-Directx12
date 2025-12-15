@@ -58,7 +58,7 @@ public:
         return 0.0f;
     }
 
-    void update(float dt, Player& player, const std::vector<AABB>& obstacles) {
+    void update(float dt, Player& player, const std::vector<AABB>& walls, const std::vector<Enemy>& enemies) {
         if (!targetAnimInstance) return;
 
         currentAnimTime += dt;
@@ -80,12 +80,15 @@ public:
             else if (player.isFiring) {
                 desiredState = PlayerState::FIRE;
                 isActionActive = true;
-                Vec3 targetPoint = player.getCrosshairTarget(obstacles);
+
+                Vec3 target = player.getCrosshairTarget(walls, enemies);
+
                 Vec3 muzzleOffset(0.25f, -0.25f, 0.6f);
                 Matrix rotMat = player.getRotationMatrix();
                 Vec3 rotatedOffset = rotMat.mulVec(muzzleOffset);
                 Vec3 muzzlePos = player.getCameraPos() + rotatedOffset;
-                Vec3 bulletDir = (targetPoint - muzzlePos).normalize();
+
+                Vec3 bulletDir = (target - muzzlePos).normalize();
 
                 if (bulletManager) {
                     bulletManager->spawnBullet(muzzlePos, bulletDir);

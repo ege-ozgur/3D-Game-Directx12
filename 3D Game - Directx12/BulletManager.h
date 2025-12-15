@@ -5,10 +5,12 @@
 #include "EnemyManager.h"
 #include <vector>
 
+using namespace std;
+
 struct Bullet {
     Vec3 position;
     Vec3 direction;
-    float speed = 50.0f;
+    float speed = 100.0f;
     float lifeTime = 3.0f;
     bool isActive = true;
     AABB collider;
@@ -17,7 +19,7 @@ struct Bullet {
 class BulletManager {
 private:
     Sphere* bulletMesh = nullptr;
-    std::vector<Bullet> bullets;
+    vector<Bullet> bullets;
 
 public:
     void init(Sphere* mesh) {
@@ -31,13 +33,15 @@ public:
         b.isActive = true;
         b.speed = 100.0f;
 
+        Vec3 bulletSize(0.5f, 0.5f, 0.5f);
+
         b.collider.min = b.position - Vec3(0.05f, 0.05f, 0.05f);
         b.collider.max = b.position + Vec3(0.05f, 0.05f, 0.05f);
 
         bullets.push_back(b);
     }
 
-    void update(float dt, EnemyManager& enemyMgr, const std::vector<AABB>& walls) {
+    void update(float dt, EnemyManager& enemyMgr, const vector<AABB>& walls) {
         for (int i = 0; i < bullets.size(); i++) {
             if (!bullets[i].isActive) continue;
 
@@ -65,19 +69,22 @@ public:
                 continue;
             }
 
-            std::vector<Enemy>& enemies = enemyMgr.getEnemies();
+            vector<Enemy>& enemies = enemyMgr.getEnemies();
             for (auto& enemy : enemies) {
+
                 if (enemy.isDead) continue;
 
                 if (AABB::check(bullets[i].collider, enemy.collider)) {
-                    enemy.isDead = true;
-                    bullets[i].isActive = false;
+
+                    enemy.takeDamage(); 
+
+                    bullets[i].isActive = false; 
                     break;
                 }
             }
         }
 
-        std::vector<Bullet> activeBullets;
+        vector<Bullet> activeBullets;
         for (const auto& b : bullets) {
             if (b.isActive) activeBullets.push_back(b);
         }
