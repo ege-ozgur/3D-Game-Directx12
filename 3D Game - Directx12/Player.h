@@ -50,7 +50,7 @@ public:
         return f.normalize();
     }
 
-    Vec3 getCrosshairTarget(const std::vector<AABB>& walls, const std::vector<Enemy>& enemies, float maxDist = 1000.0f) {
+    Vec3 getCrosshairTarget(const std::vector<AABB>& walls, const std::vector<Enemy*>& enemies, float maxDist = 1000.0f) {
         Vec3 camPos = getCameraPos();
         Vec3 forward = getForward();
         Vec3 targetPoint = camPos + (forward * maxDist);
@@ -68,10 +68,10 @@ public:
             }
         }
 
-        for (const auto& enemy : enemies) {
-            if (enemy.isDead) continue;
+        for (auto enemy : enemies) {
+            if (enemy->isDead) continue;
             float t = 0.0f;
-            if (enemy.collider.rayAABB(ray, t)) {
+            if (enemy->collider.rayAABB(ray, t)) {
                 if (t < closestDist) {
                     closestDist = t;
                     targetPoint = ray.at(t);
@@ -81,7 +81,7 @@ public:
         return targetPoint;
     }
 
-    Enemy* checkShooting(const std::vector<AABB>& walls, std::vector<Enemy>& enemies, float maxDist = 1000.0f) {
+    Enemy* checkShooting(const std::vector<AABB>& walls, const std::vector<Enemy*>& enemies, float maxDist = 1000.0f) {
         Vec3 camPos = getCameraPos();
         Vec3 forward = getForward();
         Ray ray(camPos, forward);
@@ -97,13 +97,13 @@ public:
         Enemy* hitEnemy = nullptr;
         float closestEnemyDist = closestWallDist;
 
-        for (auto& enemy : enemies) {
-            if (enemy.isDead) continue;
+        for (auto enemy : enemies) {
+            if (enemy->isDead) continue;
             float t = 0.0f;
-            if (enemy.collider.rayAABB(ray, t)) {
+            if (enemy->collider.rayAABB(ray, t)) {
                 if (t < closestEnemyDist) {
                     closestEnemyDist = t;
-                    hitEnemy = &enemy;
+                    hitEnemy = enemy;
                 }
             }
         }
@@ -130,7 +130,7 @@ public:
         return AABB(min, max);
     }
 
-    void update(float dt, Window* win, const std::vector<AABB>& walls, const std::vector<Enemy>& enemies) {
+    void update(float dt, Window* win, const std::vector<AABB>& walls, const std::vector<Enemy*>& enemies) {
         if (fireTimer > 0.0f) fireTimer -= dt;
         isFiring = false;
 
@@ -192,8 +192,8 @@ public:
             if (AABB::check(playerBoxX, box)) { hitX = true; break; }
         }
         if (!hitX) {
-            for (const auto& enemy : enemies) {
-                if (!enemy.isDead && AABB::check(playerBoxX, enemy.collider)) { hitX = true; break; }
+            for (auto enemy : enemies) {
+                if (!enemy->isDead && AABB::check(playerBoxX, enemy->collider)) { hitX = true; break; }
             }
         }
         if (!hitX) position.x += desiredMove.x;
@@ -207,8 +207,8 @@ public:
             if (AABB::check(playerBoxZ, box)) { hitZ = true; break; }
         }
         if (!hitZ) {
-            for (const auto& enemy : enemies) {
-                if (!enemy.isDead && AABB::check(playerBoxZ, enemy.collider)) { hitZ = true; break; }
+            for (auto enemy : enemies) {
+                if (!enemy->isDead && AABB::check(playerBoxZ, enemy->collider)) { hitZ = true; break; }
             }
         }
         if (!hitZ) position.z += desiredMove.z;

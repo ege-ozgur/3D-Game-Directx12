@@ -26,9 +26,7 @@ public:
     PSOManager(const PSOManager&) = delete;
     PSOManager& operator=(const PSOManager&) = delete;
 
-    // --- DUZELTME BITISI ---
-
-    void createPSO(Core* core, const string& name, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_LAYOUT_DESC layout) {
+    void createPSO(Core* core, const string& name, ID3DBlob* vs, ID3DBlob* ps, D3D12_INPUT_LAYOUT_DESC layout, D3D12_RASTERIZER_DESC* customRasterizer = nullptr) {
         if (psos.find(name) != psos.end())
             return;
 
@@ -47,19 +45,24 @@ public:
         desc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
         desc.PS = { ps->GetBufferPointer(), ps->GetBufferSize() };
 
-        D3D12_RASTERIZER_DESC rasterDesc = {};
-        rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
-        rasterDesc.CullMode = D3D12_CULL_MODE_NONE;
-        rasterDesc.FrontCounterClockwise = FALSE;
-        rasterDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-        rasterDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-        rasterDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-        rasterDesc.DepthClipEnable = TRUE;
-        rasterDesc.MultisampleEnable = FALSE;
-        rasterDesc.AntialiasedLineEnable = FALSE;
-        rasterDesc.ForcedSampleCount = 0;
-        rasterDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-        desc.RasterizerState = rasterDesc;
+        if (customRasterizer != nullptr) {
+            desc.RasterizerState = *customRasterizer;
+        }
+        else {
+            D3D12_RASTERIZER_DESC rasterDesc = {};
+            rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
+            rasterDesc.CullMode = D3D12_CULL_MODE_NONE;
+            rasterDesc.FrontCounterClockwise = FALSE;
+            rasterDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+            rasterDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+            rasterDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+            rasterDesc.DepthClipEnable = TRUE;
+            rasterDesc.MultisampleEnable = FALSE;
+            rasterDesc.AntialiasedLineEnable = FALSE;
+            rasterDesc.ForcedSampleCount = 0;
+            rasterDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+            desc.RasterizerState = rasterDesc;
+        }
 
         D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
         depthStencilDesc.DepthEnable = TRUE;
@@ -111,7 +114,6 @@ public:
         vector<ConstantBufferDescription> reflectedVS;
         vector<ConstantBufferDescription> reflectedPS;
 
-        // Vertex Shader Reflection
         if (vsReflection) {
             D3D12_SHADER_DESC vsDesc = {};
             vsReflection->GetDesc(&vsDesc);
@@ -169,7 +171,7 @@ public:
         vector<ConstantBuffer*> vsCBs;
         for (auto& descCB : reflectedVS) {
             ConstantBuffer* cb = new ConstantBuffer();
-            cb->init(core, descCB, 1024); 
+            cb->init(core, descCB, 1024);
             vsCBs.push_back(cb);
         }
 

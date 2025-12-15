@@ -16,7 +16,6 @@ struct Enemy {
 
     void updateTransform() {
         if (isDead) {
-            // Olunce collider'i yok et (Mermiler gecsin)
             collider.reset();
             return;
         }

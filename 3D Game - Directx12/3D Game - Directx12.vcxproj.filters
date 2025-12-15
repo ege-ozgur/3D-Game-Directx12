@@ -99,7 +99,10 @@
     <ClInclude Include="Enemy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TreeManager.h">
+    <ClInclude Include="SkyBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Grass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -122,10 +125,16 @@
     <FxCompile Include="crosshairPS.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
-    <FxCompile Include="treeVS.hlsl">
+    <FxCompile Include="skyVS.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
-    <FxCompile Include="treePS.hlsl">
+    <FxCompile Include="skyPS.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="grassPS.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="grassVS.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
   </ItemGroup>

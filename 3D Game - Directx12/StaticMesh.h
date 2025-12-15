@@ -27,6 +27,15 @@ public:
     const std::string vsPath = "vertexShader.hlsl";
     const std::string psPath = "pixelShader.hlsl";
 
+    StaticMesh() = default;
+
+    StaticMesh(const StaticMesh&) = delete;
+    StaticMesh& operator=(const StaticMesh&) = delete;
+
+    ~StaticMesh() {
+        for (auto m : meshes) delete m;
+    }
+
     void init(Core* core, std::string filename, TextureManager* textureMgr) {
 
         ID3DBlob* vs = shaderMgr.loadVS("staticVS", vsPath);
@@ -89,9 +98,5 @@ public:
 
             meshes[i]->draw(core);
         }
-    }
-
-    ~StaticMesh() {
-        for (auto m : meshes) delete m;
     }
 };

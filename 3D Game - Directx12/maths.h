@@ -146,14 +146,22 @@ public:
 		);
 	}
 
+	float length() const
+	{
+		return sqrt((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
+	}
 
-	float length(Vec3& pVec) const   // length of a vector
+	float lengthSquared() const
+	{
+		return ((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
+	}
+
+	float length(const Vec3& pVec) const
 	{
 		return sqrt((pVec.v[0] * pVec.v[0]) + (pVec.v[1] * pVec.v[1]) + (pVec.v[2] * pVec.v[2]));
 	}
 
-
-	float lengthSquared(Vec3& pVec) const  // length squared of a vector
+	float lengthSquared(const Vec3& pVec) const
 	{
 		return ((pVec.v[0] * pVec.v[0]) + (pVec.v[1] * pVec.v[1]) + (pVec.v[2] * pVec.v[2]));
 	}
@@ -230,18 +238,19 @@ public:
 };
 
 
-// Outside Vector class
-float Dot(const Vec3& pVec1, const Vec3& pVec2)   // dot product between two input vectors
+float Dot(const Vec3& pVec1, const Vec3& pVec2)
 {
 	return pVec1.x * pVec2.x + pVec1.y * pVec2.y + pVec1.z * pVec2.z;
 }
 
-// Outside Vector class
-float Cross(const Vec3& pVec1, const Vec3& pVec2)    // cross product between two input vectors
+
+Vec3 Cross(const Vec3& pVec1, const Vec3& pVec2)
 {
-	return (pVec1.v[1] * pVec2.v[2] - pVec1.v[2] * pVec2.v[1],
+	return Vec3(
+		pVec1.v[1] * pVec2.v[2] - pVec1.v[2] * pVec2.v[1], 
 		pVec1.v[2] * pVec2.v[0] - pVec1.v[0] * pVec2.v[2],
-		pVec1.v[0] * pVec2.v[1] - pVec1.v[1] * pVec2.v[0]);
+		pVec1.v[0] * pVec2.v[1] - pVec1.v[1] * pVec2.v[0]  
+	);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

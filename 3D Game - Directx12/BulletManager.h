@@ -69,17 +69,14 @@ public:
                 continue;
             }
 
-            vector<Enemy>& enemies = enemyMgr.getEnemies();
-            for (auto& enemy : enemies) {
+            vector<Enemy*>& enemies = enemyMgr.getEnemies();
+            for (auto enemy : enemies) {
+                if (enemy->isDead) continue;
 
-                if (enemy.isDead) continue;
-
-                if (AABB::check(bullets[i].collider, enemy.collider)) {
-
-                    enemy.takeDamage(); 
-
+                if (AABB::check(bullets[i].collider, enemy->collider)) {
+                    enemy->takeDamage();
                     bullets[i].isActive = false; 
-                    break;
+                    break; 
                 }
             }
         }

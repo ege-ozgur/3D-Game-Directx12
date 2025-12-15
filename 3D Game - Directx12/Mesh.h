@@ -13,10 +13,21 @@ public:
     D3D12_INDEX_BUFFER_VIEW ibView;
     unsigned int numMeshIndices = 0;
 
+    Mesh() = default;
+
     ~Mesh() {
-        if (vertexBuffer) vertexBuffer->Release();
-        if (indexBuffer) indexBuffer->Release();
+        if (vertexBuffer) {
+            vertexBuffer->Release();
+            vertexBuffer = nullptr; 
+        }
+        if (indexBuffer) {
+            indexBuffer->Release();
+            indexBuffer = nullptr;
+        }
     }
+
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
 
     template<typename VERTEX_TYPE>
     void init(Core* core,const std::vector<VERTEX_TYPE>& vertices,const std::vector<unsigned int>& indices) {

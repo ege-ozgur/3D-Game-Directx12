@@ -18,7 +18,9 @@
 #include "PlayerAnimManager.h"
 #include "EnemyManager.h"
 #include "BulletManager.h"
+#include "Skybox.h"
 #include "Crosshair.h" 
+#include "Grass.h"
 #include <chrono>
 #include <vector>
 #include <cmath>
@@ -61,15 +63,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     PSOManager psoMgr;
     TextureManager texMgr;
 
-    Plane planeModel;
+    StaticMesh planeModel;
     Crosshair crosshair;
 
     AnimatedMesh enemyModel;
     AnimatedMesh characterModel;
 
+    Skybox skybox;
     Sphere bulletSphere;
 
     AnimationInstance characterAnim;
+    Grass* grassSystem = nullptr;
 
     Player player;
     PlayerAnimManager playerAnimMgr;
@@ -85,8 +89,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     win.initialize(1024, 1024, "Game Scene");
     core.initialize(win.hwnd, 1024, 1024);
 
-    planeModel.init(&core);
+    planeModel.init(&core, "Models/Plane_01a.gem", &texMgr);
     crosshair.init(&core);
+
+    grassSystem = new Grass();
+    grassSystem->init(&core, &shaderMgr, &psoMgr, &texMgr, 10000, "Models/Grass_04g.gem");
 
     enemyModel.load(&core, "Models/Soldier1.gem", &psoMgr, &shaderMgr, &texMgr);
     characterModel.load(&core, "Models/AutomaticCarbine.gem", &psoMgr, &shaderMgr, &texMgr);
@@ -94,6 +101,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     bulletSphere.init(&core, 12, 12, 1.0f);
 
     characterAnim.init(&characterModel.animation, 0);
+
+    skybox.init(&core, &shaderMgr, &psoMgr, &texMgr);
 
     bulletMgr.init(&bulletSphere);
     playerAnimMgr.init(&characterAnim, &bulletMgr);
@@ -220,18 +229,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
         core.beginFrame();
         win.processMessages();
 
-        if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) 
+        if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) {
+            ShowWindow(win.hwnd, SW_HIDE);
             break;
-
+        }
         core.beginRenderPass();
         float dt = tim.dt();
-
-        if (player.isFiring) {
-            Enemy* hitEnemy = player.checkShooting(obstacles, enemyMgr.getEnemies());
-            if (hitEnemy != nullptr) {
-                hitEnemy->takeDamage();
-            }
-        }
 
         player.update(dt, &win, obstacles, enemyMgr.getEnemies());
         playerAnimMgr.update(dt, player, obstacles, enemyMgr.getEnemies());
@@ -245,12 +248,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
         float aspect = (float)win.width / (float)win.height;
         Matrix p;
-        p = p.perspectiveProjection(aspect, 60.0f, 0.1f, 5000.0f);
+        p = p.perspectiveProjection(aspect, 60.0f, 0.1f, 10000.0f);
 
         Matrix v = player.getViewMatrix();
         Matrix vp = v * p;
 
-        planeModel.draw(&core, worldPlane, vp);
+        skybox.draw(&core, &psoMgr, v, p);
+
+        planeModel.draw(&core, worldPlane, vp, &texMgr);
+
+        if (grassSystem)
+            grassSystem->draw(&core, &psoMgr, &shaderMgr, &texMgr, vp);
 
         for (int i = 0; i < staticRenderList.size(); i++)
             staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp, &texMgr);
@@ -276,10 +284,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
         core.finishFrame();
     }
 
+    core.flushGraphicsQueue();
+
+    if (grassSystem) {
+        delete grassSystem;
+        grassSystem = nullptr;
+    }
+
     for (auto const& [key, val] : meshCache)
         delete val;
 
     ShowCursor(TRUE);
-    core.flushGraphicsQueue();
+
     return 0;
 }

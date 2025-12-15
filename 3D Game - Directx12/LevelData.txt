@@ -1,8 +1,4 @@
 # TYPE   INFO(Placeholder)      POS(X,Y,Z)      ROT(X,Y,Z)      SCALE(X,Y,Z)
-
-# FLOOR
-PLANE    PROCEDURAL                     0.0 0.0 0.0     0.0 0.0 0.0     60.0 1.0 60.0
-
 # WALL
 
 # BACK WALLS (Z = 25.0)

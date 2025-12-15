@@ -106,6 +106,10 @@ public:
         mesh.init(core, vertices, indices);
     }
 
+    void draw(Core* core) {
+        mesh.draw(core);
+    }
+
     void draw(Core* core, Matrix world, Matrix vp) {
         psoMgr.bind(core, "CubePSO");
 

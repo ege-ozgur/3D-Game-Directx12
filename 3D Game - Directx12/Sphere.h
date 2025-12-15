@@ -28,6 +28,11 @@ public:
     const std::string vsPath = "vertexShader.hlsl";
     const std::string psPath = "pixelShader.hlsl";
 
+    Sphere() = default;
+
+    Sphere(const Sphere&) = delete;
+    Sphere& operator=(const Sphere&) = delete;
+
     STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
     {
         STATIC_VERTEX v;
@@ -93,6 +98,10 @@ public:
         }
 
         mesh.init(core, vertices, indices);
+    }
+
+    void draw(Core* core) {
+        mesh.draw(core);
     }
 
     void draw(Core* core, Matrix world, Matrix vp) {

@@ -21,6 +21,11 @@ public:
     std::vector<std::string> textureFilenames;
     ConstantBuffer* cBuffer = nullptr;
 
+    AnimatedMesh() = default;
+
+    AnimatedMesh(const AnimatedMesh&) = delete;
+    AnimatedMesh& operator=(const AnimatedMesh&) = delete;
+
     ~AnimatedMesh() {
         if (cBuffer) delete cBuffer;
         for (auto m : meshes) delete m;

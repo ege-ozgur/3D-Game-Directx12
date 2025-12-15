@@ -58,7 +58,7 @@ public:
         return 0.0f;
     }
 
-    void update(float dt, Player& player, const std::vector<AABB>& walls, const std::vector<Enemy>& enemies) {
+    void update(float dt, Player& player, const std::vector<AABB>& walls, const std::vector<Enemy*>& enemies) {
         if (!targetAnimInstance) return;
 
         currentAnimTime += dt;
