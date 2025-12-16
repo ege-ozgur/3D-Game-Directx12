@@ -4,7 +4,7 @@
 #include "Window.h"
 #include "Collision.h"
 #include "AnimatedMesh.h"
-#include "Enemy.h" 
+#include "Enemy.h"
 #include <vector>
 #include <cmath>
 
@@ -29,7 +29,7 @@ public:
     float speed = 10.0f;
     float mouseSensitivity = 0.002f;
     float eyeHeight = 1.7f;
-    Vec3 colliderSize = Vec3(2.0f, 4.0f, 2.0f);
+    Vec3 colliderSize = Vec3(0.6f, 3.5f, 0.6f);
 
     void init(Vec3 startPos) {
         position = startPos;

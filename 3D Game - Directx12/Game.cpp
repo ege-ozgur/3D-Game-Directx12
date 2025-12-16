@@ -18,6 +18,7 @@
 #include "PlayerAnimManager.h"
 #include "EnemyManager.h"
 #include "BulletManager.h"
+#include "GroundPlane.h"
 #include "Skybox.h"
 #include "Crosshair.h" 
 #include "Grass.h"
@@ -63,18 +64,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     PSOManager psoMgr;
     TextureManager texMgr;
 
-    StaticMesh planeModel;
-    Crosshair crosshair;
+    GroundPlane planeModel;
 
+    Crosshair crosshair;
     AnimatedMesh enemyModel;
     AnimatedMesh characterModel;
-
     Skybox skybox;
     Sphere bulletSphere;
-
     AnimationInstance characterAnim;
     Grass* grassSystem = nullptr;
-
     Player player;
     PlayerAnimManager playerAnimMgr;
     EnemyManager enemyMgr;
@@ -89,19 +87,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     win.initialize(1024, 1024, "Game Scene");
     core.initialize(win.hwnd, 1024, 1024);
 
-    planeModel.init(&core, "Models/Plane_01a.gem", &texMgr);
     crosshair.init(&core);
 
     grassSystem = new Grass();
-    grassSystem->init(&core, &shaderMgr, &psoMgr, &texMgr, 10000, "Models/Grass_04g.gem");
+    grassSystem->init(&core, &shaderMgr, &psoMgr, &texMgr, 15000, "Models/Grass_04g.gem", 25.0f);
 
     enemyModel.load(&core, "Models/Soldier1.gem", &psoMgr, &shaderMgr, &texMgr);
     characterModel.load(&core, "Models/AutomaticCarbine.gem", &psoMgr, &shaderMgr, &texMgr);
 
     bulletSphere.init(&core, 12, 12, 1.0f);
-
     characterAnim.init(&characterModel.animation, 0);
-
     skybox.init(&core, &shaderMgr, &psoMgr, &texMgr);
 
     bulletMgr.init(&bulletSphere);
@@ -111,9 +106,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     player.init(Vec3(0, 0, -10));
 
     ShowCursor(FALSE);
-
-    worldPlane.scaling(Vec3(50.0f, 1.0f, 50.0f));
-    worldPlane.translation(Vec3(0.0f, -0.1f, 0.0f));
 
     ifstream file("LevelData.txt");
 
@@ -143,7 +135,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
             Matrix worldMatrix = S * R * T;
 
-            if (type == "TREE")
+            if (type == "TREE" || type == "WALL")
             {
                 if (meshCache.find(path) == meshCache.end())
                 {
@@ -155,11 +147,27 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
                 RenderItem item;
                 item.mesh = meshCache[path];
                 item.transform = worldMatrix;
+                Vec3 colSize(1.0f, 1.0f, 1.0f);
+                Vec3 centerOffset(0, 0, 0);
 
-                Vec3 colSize(1.0f, 10.0f, 1.0f);
+                if (type == "TREE") {
+                    colSize = Vec3(1.0f, 10.0f, 1.0f);
+                    centerOffset = Vec3(0, 5.0f, 0);
+                }
+                else {
+                    float baseThickness = 2.0f;
+                    float baseHeight = 5.0f;
+                    float baseWidth = 4.0f;
+                    float w = baseThickness * sc.x;
+                    float h = baseHeight * sc.y;
+                    float d = baseWidth * sc.z;
+                    if (abs(rot.y) > 0.1f) std::swap(w, d);
+                    colSize = Vec3(w, h, d);
+                    centerOffset = Vec3(0, h * 0.5f, 0);
+                }
+
                 Vec3 halfSize = colSize * 0.5f;
-                Vec3 centerPos = pos;
-                centerPos.y += 5.0f;
+                Vec3 centerPos = pos + centerOffset;
 
                 item.collider.min = centerPos - halfSize;
                 item.collider.max = centerPos + halfSize;
@@ -170,46 +178,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
             else if (type == "PLANE")
             {
                 worldPlane = worldMatrix;
+                planeModel.init(&core, path, &texMgr);
             }
             else if (type == "ENEMY")
             {
                 enemyMgr.spawnEnemy(pos, sc);
-            }
-            else if (type == "WALL")
-            {
-                if (meshCache.find(path) == meshCache.end())
-                {
-                    StaticMesh* newMesh = new StaticMesh();
-                    newMesh->init(&core, path, &texMgr);
-                    meshCache[path] = newMesh;
-                }
-
-                RenderItem item;
-                item.mesh = meshCache[path];
-                item.transform = worldMatrix;
-
-                float baseThickness = 2.0f;
-                float baseHeight = 5.0f;
-                float baseWidth = 4.0f;
-
-                float w = baseThickness * sc.x;
-                float h = baseHeight * sc.y;
-                float d = baseWidth * sc.z;
-
-                if (abs(rot.y) > 0.1f)
-                    std::swap(w, d);
-
-                Vec3 colSize(w, h, d);
-                Vec3 halfSize = colSize * 0.5f;
-
-                Vec3 centerPos = pos;
-                centerPos.y += halfSize.y;
-
-                item.collider.min = centerPos - halfSize;
-                item.collider.max = centerPos + halfSize;
-
-                staticRenderList.push_back(item);
-                obstacles.push_back(item.collider);
             }
         }
         file.close();
@@ -218,7 +191,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
     float mapLimit = 48.0f;
     float wallThick = 10.0f;
     float wallH = 100.0f;
-
     Vec3 sizeN(100.0f, wallH, wallThick);
     Vec3 posN(0.0f, 0.0f, mapLimit + 5.0f);
     AABB wN(posN - sizeN * 0.5f, posN + sizeN * 0.5f);
@@ -248,7 +220,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
         float aspect = (float)win.width / (float)win.height;
         Matrix p;
-        p = p.perspectiveProjection(aspect, 60.0f, 0.1f, 10000.0f);
+        p = p.perspectiveProjection(aspect, 60.0f, 0.01f, 10000.0f);
 
         Matrix v = player.getViewMatrix();
         Matrix vp = v * p;
@@ -260,40 +232,31 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
         if (grassSystem)
             grassSystem->draw(&core, &psoMgr, &shaderMgr, &texMgr, vp);
 
-        for (int i = 0; i < staticRenderList.size(); i++)
-            staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp, &texMgr);
+        for (int i = 0; i < staticRenderList.size(); i++) {
+            if (staticRenderList[i].mesh) {
+                staticRenderList[i].mesh->draw(&core, staticRenderList[i].transform, vp, &texMgr);
+            }
+        }
 
         enemyMgr.draw(&core, &psoMgr, &shaderMgr, &texMgr, vp);
         bulletMgr.draw(&core, vp);
 
         Matrix identityView;
         Matrix weaponVP = identityView * p;
-
-        Matrix gunS;
-        gunS.scaling(Vec3(0.02f, 0.02f, 0.02f));
-        Matrix gunR;
-        gunR.rotAroundY(3.14159f);
-        Matrix gunT;
-        gunT.translation(Vec3(0.05f, -0.07f, 0.15f));
+        Matrix gunS; gunS.scaling(Vec3(0.02f, 0.02f, 0.02f));
+        Matrix gunR; gunR.rotAroundY(3.14159f);
+        Matrix gunT; gunT.translation(Vec3(0.05f, -0.07f, 0.15f));
         Matrix gunWorld = gunS * gunR * gunT;
 
         characterModel.draw(&core, &psoMgr, &shaderMgr, &texMgr, &characterAnim, weaponVP, gunWorld);
-
         crosshair.draw(&core);
 
         core.finishFrame();
     }
 
     core.flushGraphicsQueue();
-
-    if (grassSystem) {
-        delete grassSystem;
-        grassSystem = nullptr;
-    }
-
-    for (auto const& [key, val] : meshCache)
-        delete val;
-
+    if (grassSystem) { delete grassSystem; grassSystem = nullptr; }
+    for (auto const& [key, val] : meshCache) delete val;
     ShowCursor(TRUE);
 
     return 0;

@@ -25,7 +25,7 @@ struct Enemy {
         R.rotAroundY(rotation.y);
         T.translation(position);
         transform = S * R * T;
-        Vec3 finalSize(3.0f, 8.0f, 3.0f);
+        Vec3 finalSize(0.7f, 3.5f, 0.7f);
 
         Vec3 centerPos = position;
         centerPos.y += finalSize.y * 0.5f;
