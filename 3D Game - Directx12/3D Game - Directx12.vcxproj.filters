@@ -105,6 +105,9 @@
     <ClInclude Include="Grass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GroundPlane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="animVertexShader.hlsl">
@@ -135,6 +138,12 @@
       <Filter>Source Files</Filter>
     </FxCompile>
     <FxCompile Include="grassVS.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="groundPS.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="groundVS.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
   </ItemGroup>

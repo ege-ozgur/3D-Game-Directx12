@@ -42,7 +42,21 @@ public:
         ID3DBlob* ps = shaderMgr.loadPS("staticPS", psPath);
 
         D3D12_INPUT_LAYOUT_DESC layout = VertexLayoutCache::getStaticLayout();
-        psoMgr.createPSO(core, "StaticMeshPSO", vs, ps, layout);
+
+        D3D12_RASTERIZER_DESC rasterDesc = {};
+        rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
+        rasterDesc.CullMode = D3D12_CULL_MODE_NONE; 
+        rasterDesc.FrontCounterClockwise = FALSE;
+        rasterDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+        rasterDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+        rasterDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+        rasterDesc.DepthClipEnable = TRUE;
+        rasterDesc.MultisampleEnable = FALSE;
+        rasterDesc.AntialiasedLineEnable = FALSE;
+        rasterDesc.ForcedSampleCount = 0;
+        rasterDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+        psoMgr.createPSO(core, "StaticMeshPSO", vs, ps, layout, &rasterDesc);
 
         GEMLoader::GEMModelLoader loader;
         vector<GEMLoader::GEMMesh> gemmeshes;
@@ -62,10 +76,11 @@ public:
             meshes.push_back(mesh);
 
             string texName = gemmeshes[i].material.find("albedo").getValue();
-
             textureFilenames.push_back(texName);
 
             if (!texName.empty()) {
+                if (texName.find("Models/") == std::string::npos) {
+                }
                 textureMgr->load(core, texName);
             }
         }
@@ -95,7 +110,6 @@ public:
                     shaderMgr.updateTexturePS(core, "staticPS", "tex", textureIndex);
                 }
             }
-
             meshes[i]->draw(core);
         }
     }

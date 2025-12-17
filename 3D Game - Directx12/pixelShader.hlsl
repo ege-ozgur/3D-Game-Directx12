@@ -1,5 +1,5 @@
-Texture2D tex : register(t0); 
-SamplerState samplerLinear : register(s0); 
+Texture2D tex : register(t0);
+SamplerState sam : register(s0);
 
 struct PS_INPUT
 {
@@ -11,11 +11,15 @@ struct PS_INPUT
 
 float4 PS(PS_INPUT input) : SV_Target0
 {
-    float4 textureColor = tex.Sample(samplerLinear, input.TexCoords);
+    float4 albedo = tex.Sample(sam, input.TexCoords);
+
+    if (albedo.a < 0.5f)
+    {
+        discard;
+    }
 
     float3 lightDir = normalize(float3(0.5, 1.0, -0.5));
-    
-    float diff = max(dot(normalize(input.Normal), lightDir), 0.2f); 
+    float diff = max(dot(normalize(input.Normal), lightDir), 0.2f);
 
-    return float4(textureColor.rgb * diff, 1.0f);
+    return float4(albedo.rgb * diff, 1.0f);
 }
