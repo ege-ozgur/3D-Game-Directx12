@@ -9,12 +9,14 @@
 using namespace std;
 
 class EnemyManager {
-private:
+public:
     AnimatedMesh* modelRef = nullptr;
     vector<Enemy*> enemies;
-
-public:
     ~EnemyManager() {
+        reset();
+    }
+
+    void reset() {
         for (auto e : enemies) {
             delete e;
         }
@@ -34,7 +36,7 @@ public:
 
         e->anim.init(&modelRef->animation, 0);
         e->anim.usingAnimation = "idle";
-        e->anim.t = ((float)rand() / RAND_MAX);
+        e->anim.t = ((float)rand() / (float)RAND_MAX) * 2.0f;
 
         e->updateTransform();
         enemies.push_back(e);
@@ -43,11 +45,22 @@ public:
     void update(float dt, Vec3 playerPos) {
         for (auto e : enemies) {
             if (e->isDead) continue;
+            if (e->isDying) {
+                e->anim.update("death from the front", dt);
+
+                if (e->anim.t >= 1.0f) { 
+                    e->isDead = true;
+                }
+
+                e->updateTransform();
+                continue; 
+            }
 
             e->anim.update("idle", dt);
+
             Vec3 dir = playerPos - e->position;
             float angle = atan2(dir.x, dir.z);
-            e->rotation.y = angle + 3.14159f + 0.2f;
+            e->rotation.y = angle + 3.14159f;
 
             e->updateTransform();
         }
@@ -55,9 +68,7 @@ public:
 
     void draw(Core* core, PSOManager* pso, ShaderManager* sm, TextureManager* tm, Matrix vp) {
         for (auto e : enemies) {
-            if (e->isDead) {
-                continue;
-            }
+            if (e->isDead) continue;
             modelRef->draw(core, pso, sm, tm, &e->anim, vp, e->transform);
         }
     }

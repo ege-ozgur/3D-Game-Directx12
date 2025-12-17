@@ -12,21 +12,18 @@ struct Enemy {
     AnimationInstance anim;
     AABB collider;
 
+    float health = 100.0f;
     bool isDead = false;
+    bool isDying = false;
 
     void updateTransform() {
-        if (isDead) {
-            collider.reset();
-            return;
-        }
-
         Matrix S, R, T;
         S.scaling(scale);
         R.rotAroundY(rotation.y);
         T.translation(position);
         transform = S * R * T;
-        Vec3 finalSize(0.7f, 3.5f, 0.7f);
 
+        Vec3 finalSize(0.8f, 3.5f, 0.8f);
         Vec3 centerPos = position;
         centerPos.y += finalSize.y * 0.5f;
 
@@ -34,7 +31,16 @@ struct Enemy {
         collider.max = centerPos + (finalSize * 0.5f);
     }
 
-    void takeDamage() {
-        isDead = true;
+    void takeDamage(float amount) {
+        if (isDead || isDying) return;
+
+        health -= amount;
+        if (health <= 0.0f) {
+            health = 0.0f;
+            isDying = true; 
+            anim.usingAnimation = "death";
+            anim.t = 0.0f; 
+            anim.loop = false; 
+        }
     }
 };

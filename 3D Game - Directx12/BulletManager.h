@@ -4,6 +4,7 @@
 #include "Collision.h"
 #include "EnemyManager.h"
 #include <vector>
+#include <algorithm> 
 
 using namespace std;
 
@@ -13,7 +14,6 @@ struct Bullet {
     float speed = 100.0f;
     float lifeTime = 3.0f;
     bool isActive = true;
-    AABB collider;
 };
 
 class BulletManager {
@@ -26,18 +26,16 @@ public:
         bulletMesh = mesh;
     }
 
+    void reset() {
+        bullets.clear();
+    }
+
     void spawnBullet(Vec3 startPos, Vec3 dir) {
         Bullet b;
         b.position = startPos;
         b.direction = dir;
         b.isActive = true;
-        b.speed = 100.0f;
-
-        Vec3 bulletSize(0.5f, 0.5f, 0.5f);
-
-        b.collider.min = b.position - Vec3(0.05f, 0.05f, 0.05f);
-        b.collider.max = b.position + Vec3(0.05f, 0.05f, 0.05f);
-
+        b.speed = 150.0f; 
         bullets.push_back(b);
     }
 
@@ -51,33 +49,50 @@ public:
                 continue;
             }
 
-            bullets[i].position += bullets[i].direction * bullets[i].speed * dt;
+            float moveDist = bullets[i].speed * dt;
 
-            Vec3 size(0.1f, 0.1f, 0.1f);
-            bullets[i].collider.min = bullets[i].position - (size * 0.5f);
-            bullets[i].collider.max = bullets[i].position + (size * 0.5f);
+            Ray ray(bullets[i].position, bullets[i].direction);
 
-            bool hitWall = false;
+            float closestHit = moveDist; 
+            bool hitSomething = false;
+            Enemy* hitEnemy = nullptr;
+
+
             for (const auto& wall : walls) {
-                if (AABB::check(bullets[i].collider, wall)) {
-                    hitWall = true;
-                    break;
+                float t = 0.0f;
+                if (wall.rayAABB(ray, t)) {
+                    if (t < closestHit && t >= 0.0f) {
+                        closestHit = t;
+                        hitSomething = true;
+                        hitEnemy = nullptr; 
+                    }
                 }
-            }
-            if (hitWall) {
-                bullets[i].isActive = false;
-                continue;
             }
 
             vector<Enemy*>& enemies = enemyMgr.getEnemies();
             for (auto enemy : enemies) {
                 if (enemy->isDead) continue;
 
-                if (AABB::check(bullets[i].collider, enemy->collider)) {
-                    enemy->takeDamage();
-                    bullets[i].isActive = false; 
-                    break; 
+                float t = 0.0f;
+                if (enemy->collider.rayAABB(ray, t)) {
+                    if (t < closestHit && t >= 0.0f) {
+                        closestHit = t;
+                        hitSomething = true;
+                        hitEnemy = enemy;
+                    }
                 }
+            }
+
+            if (hitSomething) {
+                bullets[i].position += bullets[i].direction * closestHit;
+                bullets[i].isActive = false; 
+
+                if (hitEnemy) {
+                    hitEnemy->takeDamage(50.0f); 
+                }
+            }
+            else {
+                bullets[i].position += bullets[i].direction * moveDist;
             }
         }
 
@@ -95,7 +110,7 @@ public:
             if (!b.isActive) continue;
 
             Matrix S, T;
-            S.scaling(Vec3(0.02f, 0.02f, 0.02f));
+            S.scaling(Vec3(0.05f, 0.05f, 0.05f));
             T.translation(b.position);
             Matrix world = S * T;
 

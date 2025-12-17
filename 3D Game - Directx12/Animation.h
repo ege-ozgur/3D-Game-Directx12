@@ -127,12 +127,17 @@ public:
 	Animation* animation;
 	std::string usingAnimation;
 	float t;
-	Matrix matrices[256]; // This is defined as 256 to match the maximum number in the shader
-	Matrix matricesPose[256]; // This is to store transforms needed for finding bone positions
+
+	bool loop = true;
+
+	Matrix matrices[256];
+	Matrix matricesPose[256];
 	Matrix coordTransform;
+
 	void init(Animation* _animation, int fromYZX)
 	{
 		animation = _animation;
+		loop = true; 
 		if (fromYZX == 1)
 		{
 			coordTransform.rotationX(3.14159f);
@@ -142,6 +147,7 @@ public:
 			coordTransform = Matrix();
 		}
 	}
+
 	void update(std::string name, float dt)
 	{
 		if (name != usingAnimation)
@@ -150,36 +156,55 @@ public:
 			t = 0;
 		}
 
-		t += dt; 
+		t += dt;
 
+		if (animation->animations.find(usingAnimation) == animation->animations.end()) return;
 		float duration = animation->animations[usingAnimation].duration();
+		if (duration <= 0.0f) return;
 
-		if (duration > 0 && t > duration)
+		float frameTime = t;
+
+		if (t >= duration)
 		{
-			t = fmod(t, duration);
+			if (loop)
+			{
+				t = fmod(t, duration);
+				frameTime = t;
+			}
+			else
+			{
+				frameTime = duration - 0.001f;
+
+				if (frameTime < 0.0f) frameTime = 0.0f;
+			}
 		}
 
 		int frame = 0;
 		float interpolationFact = 0;
-		animation->calcFrame(name, t, frame, interpolationFact);
+
+		animation->calcFrame(name, frameTime, frame, interpolationFact);
+
 		for (int i = 0; i < animation->bonesSize(); i++)
 		{
 			matrices[i] = animation->interpolateBoneToGlobal(name, matrices, frame, interpolationFact, i);
 		}
 		animation->calcTransforms(matrices, coordTransform);
 	}
+
 	void resetAnimationTime()
 	{
 		t = 0;
 	}
+
 	bool animationFinished()
 	{
-		if (t > animation->animations[usingAnimation].duration())
+		if (!loop && t > animation->animations[usingAnimation].duration())
 		{
 			return true;
 		}
 		return false;
 	}
+
 	Matrix findWorldMatrix(std::string boneName)
 	{
 		int boneID = animation->skeleton.findBone(boneName);
@@ -192,7 +217,13 @@ public:
 		}
 		int frame = 0;
 		float interpolationFact = 0;
-		animation->calcFrame(usingAnimation, t, frame, interpolationFact);
+		float duration = animation->animations[usingAnimation].duration();
+		float evalTime = t;
+		if (!loop && t > duration) evalTime = duration;
+		else if (loop && t > duration) evalTime = fmod(t, duration);
+
+		animation->calcFrame(usingAnimation, evalTime, frame, interpolationFact);
+
 		for (int i = boneChain.size() - 1; i > -1; i = i - 1)
 		{
 			matricesPose[boneChain[i]] = animation->interpolateBoneToGlobal(usingAnimation, matricesPose, frame, interpolationFact, boneChain[i]);

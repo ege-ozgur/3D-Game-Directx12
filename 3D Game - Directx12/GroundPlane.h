@@ -21,7 +21,6 @@ class GroundPlane {
 public:
     vector<Mesh*> meshes;
     int albedoID = -1;
-    int normalID = -1;
 
     ShaderManager shaderMgr;
     PSOManager psoMgr;
@@ -38,6 +37,7 @@ public:
         if (cBuffer) delete cBuffer;
         for (auto m : meshes) delete m;
     }
+
     void init(Core* core, std::string gemFilename, TextureManager* textureMgr) {
 
         ID3DBlob* vs = shaderMgr.loadVS("groundVS", vsPath);
@@ -83,7 +83,9 @@ public:
                 STATIC_VERTEX v;
                 v.pos = Vec3(gemmeshes[i].verticesStatic[j].position.x, gemmeshes[i].verticesStatic[j].position.y, gemmeshes[i].verticesStatic[j].position.z);
                 v.normal = Vec3(gemmeshes[i].verticesStatic[j].normal.x, gemmeshes[i].verticesStatic[j].normal.y, gemmeshes[i].verticesStatic[j].normal.z);
+
                 v.tangent = Vec3(1.0f, 0.0f, 0.0f);
+
                 v.tu = gemmeshes[i].verticesStatic[j].u;
                 v.tv = gemmeshes[i].verticesStatic[j].v;
 
@@ -93,9 +95,7 @@ public:
             mesh->init(core, vertices, gemmeshes[i].indices);
             meshes.push_back(mesh);
 
-
             string autoTexPath = gemmeshes[i].material.find("albedo").getValue();
-
             if (!autoTexPath.empty()) {
                 textureMgr->load(core, autoTexPath);
                 albedoID = textureMgr->find(autoTexPath);
