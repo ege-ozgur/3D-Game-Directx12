@@ -1,7 +1,7 @@
 #pragma once
 #include <d3d12.h>
 
-class DescriptorHeap {
+class DescriptorHeap { // A descriptor heap class to manage descriptors. Copied from the slides in the lectures.
 public:
 	ID3D12DescriptorHeap* heap;
 	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle;

@@ -17,3 +17,5 @@ PS_IN VS(VS_IN input)
     output.pos = float4(input.pos, 1.0f);
     return output;
 }
+
+// simple vertex shader to render a crosshair at the center of the screen

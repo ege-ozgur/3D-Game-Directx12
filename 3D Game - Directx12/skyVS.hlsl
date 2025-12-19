@@ -22,7 +22,9 @@ VS_OUTPUT VS(VS_INPUT input)
     float4 pos = mul(float4(input.Pos, 1.0f), WVP);
     
     output.Pos = pos;
-    output.Pos.z = pos.w * 0.999999f;
+    output.Pos.z = pos.w * 0.999999f; // set depth to far plane
 
     return output;
 }
+
+// vertex shader for rendering a skybox

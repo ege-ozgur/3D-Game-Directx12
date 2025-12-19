@@ -4,7 +4,8 @@
 
 using namespace std;
 
-struct STATIC_VERTEX
+// this class and structures was written based on the lecture slides to define vertex structures and input layouts for static and animated meshes
+struct STATIC_VERTEX // structure for static mesh vertex
 {
     Vec3 pos;
     Vec3 normal;
@@ -13,7 +14,7 @@ struct STATIC_VERTEX
     float tv;
 };
 
-struct ANIMATED_VERTEX
+struct ANIMATED_VERTEX // structure for animated mesh vertex
 {
     Vec3 pos;
     Vec3 normal;
@@ -24,7 +25,7 @@ struct ANIMATED_VERTEX
     float boneWeights[4];
 };
 
-class VertexLayoutCache
+class VertexLayoutCache // class to provide static methods for getting input layouts for different vertex types
 {
 public:
     static const D3D12_INPUT_LAYOUT_DESC& getStaticLayout() {

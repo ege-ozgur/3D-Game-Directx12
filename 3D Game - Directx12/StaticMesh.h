@@ -11,12 +11,12 @@
 
 using namespace std;
 
-struct StaticMeshConstantBuffer {
+struct StaticMeshConstantBuffer { // constant buffer structure for static mesh shaders
     Matrix W;
     Matrix VP;
 };
 
-class StaticMesh {
+class StaticMesh { // static mesh class to load and render static models from GEM files
 public:
     vector<Mesh*> meshes;
     vector<string> textureFilenames;
@@ -24,8 +24,9 @@ public:
     ShaderManager shaderMgr;
     PSOManager psoMgr;
 
-    const std::string vsPath = "vertexShader.hlsl";
-    const std::string psPath = "pixelShader.hlsl";
+	// we load the shaders for static mesh rendering
+    const string vsPath = "vertexShader.hlsl";
+    const string psPath = "pixelShader.hlsl";
 
     StaticMesh() = default;
 
@@ -33,12 +34,14 @@ public:
     StaticMesh& operator=(const StaticMesh&) = delete;
 
     ~StaticMesh() {
-        for (auto m : meshes) delete m;
+        for (auto m : meshes) {
+            delete m;
+        }
     }
 
-    void init(Core* core, std::string filename, TextureManager* textureMgr) {
+	void init(Core* core, string filename, TextureManager* textureMgr) { // initialize the static mesh from a GEM file
 
-        ID3DBlob* vs = shaderMgr.loadVS("staticVS", vsPath);
+		ID3DBlob* vs = shaderMgr.loadVS("staticVS", vsPath); // load the shaders
         ID3DBlob* ps = shaderMgr.loadPS("staticPS", psPath);
 
         D3D12_INPUT_LAYOUT_DESC layout = VertexLayoutCache::getStaticLayout();
@@ -56,13 +59,13 @@ public:
         rasterDesc.ForcedSampleCount = 0;
         rasterDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-        psoMgr.createPSO(core, "StaticMeshPSO", vs, ps, layout, &rasterDesc);
+		psoMgr.createPSO(core, "StaticMeshPSO", vs, ps, layout, &rasterDesc); // create the PSO
 
         GEMLoader::GEMModelLoader loader;
         vector<GEMLoader::GEMMesh> gemmeshes;
         loader.load(filename, gemmeshes);
 
-        for (int i = 0; i < gemmeshes.size(); i++) {
+		for (int i = 0; i < gemmeshes.size(); i++) { // create a mesh for each GEM mesh
             Mesh* mesh = new Mesh();
             std::vector<STATIC_VERTEX> vertices;
 
@@ -72,36 +75,34 @@ public:
                 vertices.push_back(v);
             }
 
-            mesh->init(core, vertices, gemmeshes[i].indices);
+			mesh->init(core, vertices, gemmeshes[i].indices); // initialize the mesh with vertices and indices
             meshes.push_back(mesh);
 
-            string texName = gemmeshes[i].material.find("albedo").getValue();
+			string texName = gemmeshes[i].material.find("albedo").getValue(); // find the albedo texture from the GEM material
             textureFilenames.push_back(texName);
 
             if (!texName.empty()) {
-                if (texName.find("Models/") == std::string::npos) {
-                }
-                textureMgr->load(core, texName);
+				textureMgr->load(core, texName); // if texture exists we load it
             }
         }
     }
 
-    void draw(Core* core, Matrix world, Matrix vp, TextureManager* textureMgr) {
-        psoMgr.bind(core, "StaticMeshPSO");
+	void draw(Core* core, Matrix world, Matrix vp, TextureManager* textureMgr) { // draw the static mesh with given world and view-projection matrices
+		psoMgr.bind(core, "StaticMeshPSO"); // we bind the PSO
 
         StaticMeshConstantBuffer cbData;
         cbData.W = world;
         cbData.VP = vp;
 
-        ConstantBuffer* cb = psoMgr.getVSConstantBuffer("StaticMeshPSO", 0);
-        if (cb) {
+		ConstantBuffer* cb = psoMgr.getVSConstantBuffer("StaticMeshPSO", 0); // get the constant buffer for the vertex shader
+		if (cb) { // if constant buffer exists we update it with the matrices
             cb->update("W", &cbData.W, sizeof(Matrix));
             cb->update("VP", &cbData.VP, sizeof(Matrix));
         }
 
-        psoMgr.apply(core, "StaticMeshPSO");
+		psoMgr.apply(core, "StaticMeshPSO"); // apply the PSO settings
 
-        for (int i = 0; i < meshes.size(); i++)
+		for (int i = 0; i < meshes.size(); i++) // drawing of each mesh
         {
             if (i < textureFilenames.size()) {
                 int textureIndex = textureMgr->find(textureFilenames[i]);

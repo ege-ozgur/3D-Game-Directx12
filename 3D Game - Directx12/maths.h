@@ -7,17 +7,13 @@
 #include "GamesEngineeringBase.h"
 using namespace std;
 
-// Macro - square - useful for squaring functions
 #define SQ(x) ((x) * (x))
 
-// Lerp Template
 template<typename T>
 static T lerp(const T a, const T b, float t)
 {
 	return a * (1.0f - t) + (b * t);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 
 struct float2
 {
@@ -25,13 +21,13 @@ struct float2
 	float y;
 };
 
-class Vec3
+class Vec3 // vec3 class for 3D vector operations
 {
 public:
 	union
 	{
 		float v[3];
-		struct { float x, y, z; };  // v[0] is x, v[1] is y, v[2] is z
+		struct { float x, y, z; };  
 	};
 
 	// Default Constructor
@@ -40,48 +36,27 @@ public:
 	// Constructor with parameters
 	Vec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 
-
-	Vec3 operator+(const Vec3& pVec) const   // takes a vec as input and add
+	Vec3 operator-(const Vec3& pVec) const // takes a vector as input and subtracts
 	{
-		return Vec3(
-			v[0] + pVec.v[0], 
-			v[1] + pVec.v[1], 
-			v[2] + pVec.v[2]
-		);   
+		return Vec3(v[0] - pVec.v[0],v[1] - pVec.v[1],v[2] - pVec.v[2]);
 	}
 
-
-	Vec3 operator-(const Vec3& pVec) const    // takes a vec as input and subtracts
+	Vec3 operator+(const Vec3& pVec) const // takes a vector as input and does the addition
 	{
-		return Vec3(
-			v[0] - pVec.v[0], 
-			v[1] - pVec.v[1], 
-			v[2] - pVec.v[2]
-		);   
+		return Vec3(v[0] + pVec.v[0], v[1] + pVec.v[1], v[2] + pVec.v[2]);   
 	}
 
-
-	Vec3 operator*(const Vec3& pVec) const    // takes a vec as input and multiples
+	Vec3 operator/(const Vec3& pVec) const // divides vec by input vec
 	{
-		return Vec3(
-			v[0] * pVec.v[0], 
-			v[1] * pVec.v[1], 
-			v[2] * pVec.v[2]
-		);
+		return Vec3(v[0] / pVec.v[0],v[1] / pVec.v[1],v[2] / pVec.v[2]);
 	}
 
-
-	Vec3 operator/(const Vec3& pVec) const    // divides vec by input vec
+	Vec3 operator*(const Vec3& pVec) const // multiplies vec by input vec
 	{
-		return Vec3(
-			v[0] / pVec.v[0], 
-			v[1] / pVec.v[1], 
-			v[2] / pVec.v[2]
-		);
+		return Vec3(v[0] * pVec.v[0], v[1] * pVec.v[1], v[2] * pVec.v[2]);
 	}
 
-
-	Vec3& operator+=(const Vec3& pVec)    // add each component of vec input to this vector
+	Vec3& operator+=(const Vec3& pVec) // it adds each component of input vec to this vector
 	{
 		v[0] += pVec.v[0];
 		v[1] += pVec.v[1];
@@ -89,17 +64,7 @@ public:
 		return *this;
 	}
 	
-
-	Vec3& operator-=(const Vec3& pVec)   // subtracts each component of vec input from this vector
-	{
-		v[0] -= pVec.v[0];
-		v[1] -= pVec.v[1];
-		v[2] -= pVec.v[2];
-		return *this;
-	}
-
-
-	Vec3& operator*=(const Vec3& pVec)     // multiplies each component of vec input to this vector
+	Vec3& operator*=(const Vec3& pVec) // multiplies each component of vec input to this vector
 	{
 		v[0] *= pVec.v[0];
 		v[1] *= pVec.v[1];
@@ -108,7 +73,7 @@ public:
 	}
 
 
-	Vec3& operator/=(const Vec3& pVec)     // divides each component of vec input by this vector
+	Vec3& operator/=(const Vec3& pVec) // it divides each component of vec input to this vector
 	{
 		v[0] /= pVec.v[0];
 		v[1] /= pVec.v[1];
@@ -116,65 +81,57 @@ public:
 		return *this;
 	}
 
-
-	Vec3 operator*(const float val) const       // scales vec by scalar value
+	Vec3& operator-=(const Vec3& pVec) // this operator subtracts each component of input vec from this vector
 	{
-		return Vec3(
-			v[0] * val, 
-			v[1] * val, 
-			v[2] * val
-		);
+		v[0] -= pVec.v[0];
+		v[1] -= pVec.v[1];
+		v[2] -= pVec.v[2];
+		return *this;
+	}
+
+	Vec3 operator*(const float val) const // it multiplies vector by scalar
+	{
+		return Vec3(v[0] * val, v[1] * val, v[2] * val);
 	}
 
 
-	Vec3 operator/(const float val) const     // divides vector by scalar
+	Vec3 operator/(const float val) const // it divides vector by scalar
 	{
-		return Vec3(
-			v[0] / val, 
-			v[1] / val, 
-			v[2] / val
-		);
+		return Vec3(v[0] / val, v[1] / val, v[2] / val);
 	}
 
-
-	Vec3 operator-() const    // unary negate, returns new vector pointing in opposite direction
+	Vec3 operator-() const // it negates the vector by changing the sign of each component
 	{
-		return Vec3(
-			-v[0], 
-			-v[1], 
-			-v[2]
-		);
+		return Vec3(-v[0], -v[1], -v[2]);
 	}
 
-	float length() const
+	float length() const // it returns the length of the vector. It return the lenght of the called vector
 	{
 		return sqrt((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
 	}
 
-	float lengthSquared() const
+	float lengthSquared() const // it returns the squared length of the vector. It return the squared lenght of the called vector
 	{
 		return ((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
 	}
 
-	float length(const Vec3& pVec) const
+	float length(const Vec3& pVec) const // returns length of input vector but takes the vector as parameter
 	{
 		return sqrt((pVec.v[0] * pVec.v[0]) + (pVec.v[1] * pVec.v[1]) + (pVec.v[2] * pVec.v[2]));
 	}
 
-	float lengthSquared(const Vec3& pVec) const
+	float lengthSquared(const Vec3& pVec) const // it returns squared length of input vector but takes the vector as parameter
 	{
 		return ((pVec.v[0] * pVec.v[0]) + (pVec.v[1] * pVec.v[1]) + (pVec.v[2] * pVec.v[2]));
 	}
 
-
-	Vec3 normalize() const  // normalise a vector
+	Vec3 normalize() const // This normalise a vector
 	{
 		float len = 1.0f / sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 		return Vec3(x * len, y * len, z * len);
 	}
 
-
-	float normalize_GetLength()   // normalises the vector and returns original length 
+	float normalize_GetLength() // This one normalises the vector and returns original length 
 	{
 		float length = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 		float len = 1.0f / length;
@@ -182,14 +139,13 @@ public:
 		return length;
 	}
 
-
-	float Dot(const Vec3& pVec) const   // dot product between input vec and this vec
+	float Dot(const Vec3& pVec) const // it gives the dot product between input vec and this vec
 	{
 		return v[0] * pVec.v[0] + v[1] * pVec.v[1] + v[2] * pVec.v[2];
 	}
 
 
-	Vec3 Cross(const Vec3& pVec) const    // cross product between this vec and input vec
+	Vec3 Cross(const Vec3& pVec) const // returns cross product between this vec and input vec
 	{
 		return Vec3(
 			v[1] * pVec.v[2] - v[2] * pVec.v[1],      
@@ -199,7 +155,7 @@ public:
 	}
 
 
-	Vec3 Max(const Vec3& pVec1, const Vec3& pVec2)    // returns a vec which is the maximum of two input vectors
+	Vec3 Max(const Vec3& pVec1, const Vec3& pVec2) // returns a vec which is the maximum of two input vectors
 	{
 		return Vec3(
 			max(pVec1.v[0], pVec2.v[0]),
@@ -209,7 +165,7 @@ public:
 	}
 
 
-	Vec3 Min(const Vec3& pVec1, const Vec3& pVec2)     // returns a vec which is the minimum of two input vectors
+	Vec3 Min(const Vec3& pVec1, const Vec3& pVec2) // returns a vec which is the minimum of two input vectors
 	{
 		return Vec3(
 			min(pVec1.v[0], pVec2.v[0]),
@@ -219,32 +175,31 @@ public:
 	}
 
 
-	float Max() const    // returns largest component of a vector
+	float Max() const // returns largest component of a vector
 	{
 		return max(x, max(y, z));   
 	}
 
 
-	float Min() const    // returns smallest component of a vector
+	float Min() const // returns smallest component of a vector
 	{
 		return min(x, min(y, z));  
 	}
 
 
-	void Print(const Vec3& pVec)   // print a vector
+	void Print(const Vec3& pVec) // This print a vector
 	{
 		cout << "(" << pVec.v[0] << ", " << pVec.v[1] << ", " << pVec.v[2] << ")" << std::endl;
 	}
 };
 
 
-float Dot(const Vec3& pVec1, const Vec3& pVec2)
+float Dot(const Vec3& pVec1, const Vec3& pVec2) // this function returns the dot product between two input vectors. the reason for having this outside the class is to use it without creating an object of Vec3 class
 {
 	return pVec1.x * pVec2.x + pVec1.y * pVec2.y + pVec1.z * pVec2.z;
 }
 
-
-Vec3 Cross(const Vec3& pVec1, const Vec3& pVec2)
+Vec3 Cross(const Vec3& pVec1, const Vec3& pVec2) // same for cross
 {
 	return Vec3(
 		pVec1.v[1] * pVec2.v[2] - pVec1.v[2] * pVec2.v[1], 
@@ -253,9 +208,7 @@ Vec3 Cross(const Vec3& pVec1, const Vec3& pVec2)
 	);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class Vec4
+class Vec4 // vec4 class for 4D vector operations
 {
 public:
 	union
@@ -267,62 +220,35 @@ public:
 	// Default Constructor
 	Vec4() : x(0), y(0), z(0), w(0) {}
 
-
 	// Constructor with parameters
 	Vec4(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 
-
-	// Constructor that takes a Vec3 with w = 1
+	// Constructor that takes a Vec3 with and adds a w component of 1.0f
 	Vec4(const Vec3& pVec) : x(pVec.x), y(pVec.y), z(pVec.z), w(1.0f) {}
 
 
-	Vec4 operator+(const Vec4& pVec) const   // adds input vec to this vec
+	Vec4 operator+(const Vec4& pVec) const // it adds input vec to this vec
 	{
-
-		return Vec4(
-			v[0] + pVec.v[0], 
-			v[1] + pVec.v[1], 
-			v[2] + pVec.v[2], 
-			v[3] + pVec.v[3]
-		);
+		return Vec4(v[0] + pVec.v[0], v[1] + pVec.v[1], v[2] + pVec.v[2], v[3] + pVec.v[3]);
 	}
 
-
-	Vec4 operator-(const Vec4& pVec) const   // subtracts input vec from this vec
+	Vec4 operator/(const Vec4& pVec) // divides this vec by input vec
 	{
-
-		return Vec4(
-			v[0] - pVec.v[0], 
-			v[1] - pVec.v[1], 
-			v[2] - pVec.v[2], 
-			v[3] - pVec.v[3]
-		);
+		return Vec4(v[0] / pVec.v[0], v[1] / pVec.v[1], v[2] / pVec.v[2], v[3] / pVec.v[3]);
 	}
 
-
-	Vec4 operator*(const Vec4& pVec) const    // multiplies input vec by this vec
+	Vec4 operator-(const Vec4& pVec) const // subtracts input vec from this vec
 	{
-		return Vec4(
-			v[0] * pVec.v[0], 
-			v[1] * pVec.v[1], 
-			v[2] * pVec.v[2], 
-			v[3] * pVec.v[3]
-		);
+
+		return Vec4(v[0] - pVec.v[0],v[1] - pVec.v[1],v[2] - pVec.v[2],v[3] - pVec.v[3]);
 	}
 
-
-	Vec4 operator/(const Vec4& pVec)    // divides vec by input vec
+	Vec4 operator*(const Vec4& pVec) const // this multiplies this vec by input vec
 	{
-		return Vec4(
-			v[0] / pVec.v[0], 
-			v[1] / pVec.v[1], 
-			v[2] / pVec.v[2], 
-			v[3] / pVec.v[3]
-		);
+		return Vec4(v[0] * pVec.v[0],v[1] * pVec.v[1],v[2] * pVec.v[2],	v[3] * pVec.v[3]);
 	}
 
-
-	Vec4& operator+=(const Vec4& pVec)    // adds each component of input vec to this vec
+	Vec4& operator+=(const Vec4& pVec) // adds each component of input vec to this vec
 	{
 		v[0] += pVec.v[0];
 		v[1] += pVec.v[1];
@@ -331,8 +257,7 @@ public:
 		return *this;
 	}
 
-
-	Vec4& operator-=(const Vec4& pVec)    // subtracts each component of input vec from this vec
+	Vec4& operator-=(const Vec4& pVec) // subtracts each component of input vec from this vec
 	{
 		v[0] -= pVec.v[0];
 		v[1] -= pVec.v[1];
@@ -341,28 +266,7 @@ public:
 		return *this;
 	}
 
-
-	Vec4& operator*=(const Vec4& pVec)    // multiply each component of input vec to this vec
-	{
-		v[0] *= pVec.v[0];
-		v[1] *= pVec.v[1];
-		v[2] *= pVec.v[2];
-		v[3] *= pVec.v[3];
-		return *this;
-	}
-
-
-	Vec4& operator/=(const Vec4& pVec)    // divides each component of vec by input vec
-	{
-		v[0] /= pVec.v[0];
-		v[1] /= pVec.v[1];
-		v[2] /= pVec.v[2];
-		v[3] /= pVec.v[3];
-		return *this;
-	}
-
-
-	Vec4 operator*(const float val) const       // scales vec by scalar value
+	Vec4 operator*(const float val) const // this operator scales vec by scalar value
 	{
 		return Vec4(
 			v[0] * val, 
@@ -372,8 +276,7 @@ public:
 		);
 	}
 
-
-	Vec4 operator/(const float val) const     // divide vec by scalar value
+	Vec4 operator/(const float val) const // divide vec by scalar value
 	{
 		return Vec4(
 			v[0] / val, 
@@ -383,8 +286,7 @@ public:
 		);
 	}
 
-
-	Vec4 operator-() const    // unary negate, returns new vector pointing in opposite direction
+	Vec4 operator-() const // unary negate, returns new vector pointing in opposite direction
 	{
 		return Vec4(
 			-v[0], 
@@ -395,18 +297,31 @@ public:
 	}
 
 
-	Vec4 Max(const Vec4& pVec1, const Vec4& pVec2)    // returns a vec which is the maximum of two input vectors
+	Vec4& operator*=(const Vec4& pVec) // it multiplies each component of input vec to this vec
 	{
-		return Vec4(
-			max(pVec1.v[0], pVec2.v[0]),
-			max(pVec1.v[1], pVec2.v[1]),
-			max(pVec1.v[2], pVec2.v[2]),
-			max(pVec1.v[3], pVec2.v[3])
-			);
+		v[0] *= pVec.v[0];
+		v[1] *= pVec.v[1];
+		v[2] *= pVec.v[2];
+		v[3] *= pVec.v[3];
+		return *this;
 	}
 
 
-	Vec4 Min(const Vec4& pVec1, const Vec4& pVec2)     // returns a vec which is the minimum of two input vectors
+	Vec4& operator/=(const Vec4& pVec) // divides each component of vec by input vec
+	{
+		v[0] /= pVec.v[0];
+		v[1] /= pVec.v[1];
+		v[2] /= pVec.v[2];
+		v[3] /= pVec.v[3];
+		return *this;
+	}
+
+	Vec4 Max(const Vec4& pVec1, const Vec4& pVec2) // it returns a vec which is the maximum of two input vectors
+	{
+		return Vec4(max(pVec1.v[0], pVec2.v[0]),max(pVec1.v[1], pVec2.v[1]),max(pVec1.v[2], pVec2.v[2]),max(pVec1.v[3], pVec2.v[3]));
+	}
+
+	Vec4 Min(const Vec4& pVec1, const Vec4& pVec2) // it returns a vec which is the minimum of two input vectors
 	{
 		return Vec4(
 			min(pVec1.v[0], pVec2.v[0]),
@@ -416,18 +331,15 @@ public:
 			);
 	}
 
-
 	float Max() const    // returns maximum component of a vec
 	{
 		return max(x, max(y, max(z, w)));
 	}
 
-
 	float Min() const    // returns minimum component of a vec
 	{
 		return min(x, min(y, min(z, w)));
 	}
-
 
 	void Print(const Vec4& pVec)   // print a vector
 	{
@@ -454,9 +366,7 @@ public:
 	}
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-class Matrix    // row major, not column major
+class Matrix // row major matrix class for 4x4 matrix operations
 {
 public:
 	union
@@ -466,7 +376,7 @@ public:
 	};
 
 
-	Matrix()     // default constructor, identity matrix in constructor
+	Matrix() // default constructor. we set identity matrix in constructor
 	{
 		a[0][0] = 1; a[0][1] = 0; a[0][2] = 0; a[0][3] = 0;
 		a[1][0] = 0; a[1][1] = 1; a[1][2] = 0; a[1][3] = 0;
@@ -475,7 +385,7 @@ public:
 	}
 
 
-	Matrix(float m0, float m1, float m2, float m3,       // constructor to initialise elements in matrix
+	Matrix(float m0, float m1, float m2, float m3,  // constructor to initialise elements in matrix
 		float m4, float m5, float m6, float m7,
 		float m8, float m9, float m10, float m11, 
 		float m12, float m13, float m14, float m15)     
@@ -487,7 +397,7 @@ public:
 	}
 
 
-	Vec4 mul(const Vec4& pVec)   // multiply matrix by input vec4
+	Vec4 mul(const Vec4& pVec) // multiply matrix by vec4
 	{
 		return Vec4(
 			pVec.x * m[0] + pVec.y * m[1] + pVec.z * m[2] + pVec.w * m[3],
@@ -498,7 +408,7 @@ public:
 	}
 
 
-	Vec3 mulPoint(const Vec3& pVec)  // multiply matrix by vec3 to store posiiton
+	Vec3 mulPoint(const Vec3& pVec) // multiply matrix by vec3 to store posiiton
 	{
 		return Vec3(
 			(pVec.x * m[0] + pVec.y * m[1] + pVec.z * m[2]) + m[3],
@@ -508,7 +418,7 @@ public:
 	}
 
 
-	Vec3 mulVec(const Vec3& pVec)   // multiply matrix by vec3 to store directions
+	Vec3 mulVec(const Vec3& pVec) // multiply matrix by vec3 to store directions
 	{
 		return Vec3(
 			(pVec.x * m[0] + pVec.y * m[1] + pVec.z * m[2]),
@@ -517,21 +427,21 @@ public:
 		);
 	}
 
-	void scaling(const Vec3& s)
+	void scaling(const Vec3& s) // to set scaling values in matrix
 	{
 		m[0] = s.x;
 		m[5] = s.y;
 		m[10] = s.z;
 	}
 
-	void translation(const Vec3& t)
+	void translation(const Vec3& t) // to set translation values in matrix
 	{
 		m[3] = t.x;
 		m[7] = t.y;
 		m[11] = t.z;
 	}
 
-	static Matrix translation3D(const Vec3& v)
+	static Matrix translation3D(const Vec3& v) // static function to create translation matrix from vec3 the difference is for to fit Tom's code structure for animated models
 	{
 		Matrix mat;
 		mat.a[0][3] = v.x;
@@ -539,7 +449,8 @@ public:
 		mat.a[2][3] = v.z;
 		return mat;
 	}
-	static Matrix scaling3D(const Vec3& v)
+
+	static Matrix scaling3D(const Vec3& v) // static function to create scaling matrix from vec3 the difference is for to fit Tom's code structure for animated models
 	{
 		Matrix mat;
 		mat.m[0] = v.x;
@@ -548,18 +459,18 @@ public:
 		return mat;
 	}
 
-	Matrix operator*(const Matrix& other) const
+	Matrix operator*(const Matrix& other) const // overload multiplication operator for matrix multiplication
 	{
 		return this->multiply(other);
 	}
 
-	Matrix& operator*=(const Matrix& other)
+	Matrix& operator*=(const Matrix& other) // overload multiplication assignment operator for matrix multiplication
 	{
 		*this = this->multiply(other);
 		return *this;
 	}
 
-	void rotationX(float angle)
+	void rotationX(float angle) // rotate a 4x4 matrix around the x-axis
 	{
 		m[0] = 1; m[1] = 0; m[2] = 0; m[3] = 0;
 		m[4] = 0; m[5] = 1; m[6] = 0; m[7] = 0;
@@ -572,7 +483,7 @@ public:
 		m[10] = cosf(angle);
 	}
 
-	void rotAroundY(float angle)   // rotate a 4x4 matrix around the y-axis
+	void rotAroundY(float angle) // rotate a 4x4 matrix around the y-axis
 	{
 		m[0] = cosf(angle);
 		m[2] = sinf(angle);
@@ -581,7 +492,7 @@ public:
 	}
 
 
-	void rotAroundZ(float angle)   // rotate a 4x4 matrix around the z-axis
+	void rotAroundZ(float angle) // rotate a 4x4 matrix around the z-axis
 	{
 		m[0] = cosf(angle);
 		m[1] = -sinf(angle);
@@ -590,7 +501,7 @@ public:
 	}
 
 
-	Matrix multiply(const Matrix& matrix) const
+	Matrix multiply(const Matrix& matrix) const // multiply two 4x4 matrices
 	{
 		Matrix ret;
 
@@ -618,13 +529,13 @@ public:
 	}
 
 
-	float& operator[](int index)   // operator for natural access
+	float& operator[](int index) // operator for natural access
 	{
 		return m[index];
 	}
 
 
-	Matrix invert()    // inverse of a 4x4 matrix
+	Matrix invert() // inverse of a 4x4 matrix
 	{
 		Matrix inv;
 		inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
@@ -645,10 +556,6 @@ public:
 		inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10] + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
 		float det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 		
-		if (det == 0) 
-		{
-			// Handle this case 
-		}
 		det = 1.0 / det;
 		for (int i = 0; i < 16; i++) 
 		{
@@ -658,7 +565,7 @@ public:
 	}
 
 
-	Matrix transpose(const Matrix& matrix) const   // transpose a 4x4 matrix
+	Matrix transpose(const Matrix& matrix) const // transpose a 4x4 matrix
 	{
 		Matrix m;
 		m.m[0] = matrix.m[0];
@@ -680,7 +587,7 @@ public:
 		return m;
 	}
 
-	Matrix perspectiveProjection(float _aspect, float _fov, float _near, float _far)
+	Matrix perspectiveProjection(float _aspect, float _fov, float _near, float _far) // it creates a perspective projection matrix
 	{
 		Matrix m;
 		float tanHalfFov = tan((_fov / 180.0f) * M_PI / 2.0f);
@@ -693,7 +600,7 @@ public:
 		return m;
 	}
 
-	static Matrix lookAtMatrix(const Vec3& _from, const Vec3& _to, const Vec3& _up)
+	static Matrix lookAtMatrix(const Vec3& _from, const Vec3& _to, const Vec3& _up) // it creates a lookat view matrix
 	{
 		Matrix m;
 		Vec3 direction = (_to - _from).normalize();
@@ -722,7 +629,6 @@ public:
 
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////
 
 class SphereCoordinates
 {
@@ -743,14 +649,14 @@ public:
 	}
 
 	// Converts Cartesian to Spherical
-	void FromVec3(float x, float y, float z)    // Obtain theta and phi from vector - z-up shading
+	void FromVec3(float x, float y, float z) //  it obtain theta and phi from vector - z-up shading
 	{
 		theta = acos(x / z);
 		phi = atan2f(y , x);
 	}
 
 	// Converts Sphereical to Cartesian
-	Vec3 ToVec3()                         // returns a Vec3 given theta and phi - z-up shading
+	Vec3 ToVec3()  // returns a Vec3 given theta and phi - z-up shading
 	{
 		return Vec3(
 			sinf(theta) * cosf(phi),
@@ -759,9 +665,7 @@ public:
 	}
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////
-
-class Quaternion
+class Quaternion // quaternion class for quaternion operations taken from Tom's code
 {
 public:
 	union {
@@ -898,33 +802,33 @@ public:
 	}
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////
 
-class Colour {
+class Colour { // the colour class for RGB colours
 public:
 	float r;
 	float g;
 	float b;
 
-	Colour() {
+	Colour() { // default constructor sets black colour
 		r = 0.0f;
 		g = 0.0f;
 		b = 0.0f;
 	}
 
-	Colour(float _r, float _g, float _b) {
+	Colour(float _r, float _g, float _b) { // constructor that takes values between 0.0 and 1.0
 		r = _r;
 		g = _g;
 		b = _b;
 	}
 
-	Colour(unsigned char R, unsigned char G, unsigned char B)
+	Colour(unsigned char R, unsigned char G, unsigned char B) // constructor that takes 0-255 values
 	{
 		r = R / 255.0f;
 		g = G / 255.0f;
 		b = B / 255.0f;
 	}
 
+	// colour operations
 	Colour operator+(const Colour& c) const {
 		return Colour(
 			r + c.r,
@@ -959,77 +863,13 @@ public:
 	}
 };
 
-struct PRIM_VERTEX
+struct PRIM_VERTEX // structure to hold position and colour of a vertex
 {
 	Vec3 position;
 	Colour colour;
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////
-
-
-class ShadingFrame
-{
-public:
-
-	Vec3 N;   // normal, direction perpendicular to surface
-	Vec3 T;   // tangent, one axis of surface tangent plane
-	Vec3 B;   // bitangent, other axis of surface tangent plane
-
-	// Construct from a normal given a vec3 input
-	ShadingFrame(const Vec3& pVec)
-	{
-		BuildFromNormal(pVec);
-	}
-
-	// Default frame (z-up), normal points along z, tangent along x, bitangent along y
-	ShadingFrame() : N(0, 0, 1), T(1, 0, 0), B(0, 1, 0) {}
-
-
-	// Build orthonormal basis (T, B, N)
-	void BuildFromNormal(const Vec3& pVec)
-	{
-		N = pVec.normalize();    // normalise the first vector, ensure N has unit length
-
-		// Pick helper vector not parallel to N, fabs is absolute value of float, 
-		// angle in radians
-		// which axis is more perpendicular to N? choose either x or y
-		Vec3 helper = (fabs(N.x) > cos(45 * 3.14 / 180.0f) ? Vec3(0.0f, 1.0f, 0.0f) : Vec3(1.0f, 0.0f, 0.0f));
-
-		// Gram–Schmidt: T = helper - projection(helper onto N)
-		T = helper - N * helper.Dot(N);
-
-		// Normalise T so it is unit length
-		T = T.normalize();
-
-		// B = cross product of N and T
-		B = N.Cross(T);
-
-		// Normalise B so it is unit length
-		B = B.normalize();
-	}
-
-
-	Vec3 LocalToWorld(const Vec3& pVec) const      // tangent space vector to world vector
-	{
-		return T * pVec.x + B * pVec.y + N * pVec.z;    // scales T and B and N
-	}
-
-	Vec3 WorldToLocal(const Vec3& pVec) const
-	{
-		return Vec3(            // returns a vector in local co-ordinates
-			pVec.Dot(T),  
-			pVec.Dot(B),
-			pVec.Dot(N)
-		);
-	}
-};
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-
-class Triangle
+class Triangle // triangle class for rasterization
 {
 public:
 	Vec4 v0;
@@ -1037,7 +877,6 @@ public:
 	Vec4 v2;
 
 	Triangle(Vec4 a, Vec4 b, Vec4 c) : v0(a), v1(b), v2(c) {}
-
 
 	// Cross product of two vectors
 	float edgeFunction(const Vec4& v0, const Vec4& v1, const Vec4& p)
@@ -1064,7 +903,6 @@ public:
 		tr.y = maxY;
 	}
 
-
 	// Barycentric co-ordinates for inside the triangle
 	void barycentricCoordinates(const Vec4& p, float& alpha, float& beta, float& gamma)
 	{
@@ -1090,5 +928,3 @@ t simpleInterpolateAttribute(t a0, t a1, t a2, float alpha, float beta, float ga
 }
 
 using Matrix4x4 = Matrix;
-
-/////////////////////////////////////////////////////////////////////////////////////////

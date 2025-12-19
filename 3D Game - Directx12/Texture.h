@@ -10,7 +10,7 @@
 
 using namespace std;
 
-class Texture {
+class Texture { // it is a simple texture class to load and upload textures to the GPU using DirectX 12. Written based on the lecture slides.
 public:
     ID3D12Resource* tex = nullptr;
     int heapOffset = -1;
@@ -28,7 +28,7 @@ public:
             _getcwd(cwd, sizeof(cwd));
 
             string fullPath = string(cwd) + "\\" + filename;
-            string msg = "Texture NOT FOUND!\n\nProgram looked at:\n" + fullPath +
+			string msg = "Texture NOT FOUND!\n\nProgram looked at:\n" + fullPath + // if the texture is not found, show an error message box with the current working directory. I needed this while testing to figure out where the program was looking for the texture files.
                 "\n\nPlease ensure the 'Models' folder is located next to your project files (main.cpp).";
 
             MessageBoxA(NULL, msg.c_str(), "Texture Error", MB_OK | MB_ICONERROR);
@@ -40,7 +40,7 @@ public:
             return;
         }
 
-        if (channels == 3) {
+		if (channels == 3) { // if the image has 3 channels (RGB) we convert it to 4 channels (RGBA) by adding an alpha channel with value 255 
             channels = 4;
             unsigned char* texelsWithAlpha = new unsigned char[width * height * channels];
             for (int i = 0; i < (width * height); i++) {
@@ -58,7 +58,7 @@ public:
         stbi_image_free(texels);
     }
 
-    void upload(Core* core, unsigned char* texels, int _width, int _height, int _channels) {
+	void upload(Core* core, unsigned char* texels, int _width, int _height, int _channels) { // upload the texture to the GPU
 
         this->width = _width;
         this->height = _height;

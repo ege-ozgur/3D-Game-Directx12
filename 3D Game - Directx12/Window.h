@@ -7,6 +7,7 @@
 #include <string>
 using namespace std;
 
+// the window class to create and manage a window
 class Window {
 public:
 	HWND hwnd;

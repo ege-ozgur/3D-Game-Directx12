@@ -24,10 +24,12 @@ PSInput VS(VSInput input)
 {
     PSInput output;
 
-    float4 worldPos = mul(float4(input.position, 1.0f), input.World);
+    float4 worldPos = mul(float4(input.position, 1.0f), input.World); 
     output.position = mul(worldPos, VP);
     output.uv = input.uv;
     output.normal = mul(input.normal, (float3x3) input.World);
 
     return output;
 }
+
+// vertex shader for instanced static meshes

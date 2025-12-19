@@ -13,7 +13,7 @@ struct PlaneConstantBuffer {
     Matrix VP;
 };
 
-class Plane {
+class Plane { // basic plane class to render a simple plane mesh. it creates a plane mesh and draws it not uses a texture so i didn't use this class in the final project but it was useful to have a simple plane mesh for testing purposes
 public:
     Mesh mesh;
     ShaderManager shaderMgr;

@@ -10,12 +10,12 @@ using namespace std;
 
 using namespace std;
 
-struct CubeConstantBuffer {
+struct CubeConstantBuffer { // Constant buffer structure for the cube
     Matrix W;
     Matrix VP;
 };
 
-class Cube {
+class Cube { // Cube class to handle cube mesh, shaders, and PSO. This class wasn't used in the project but created in lectures.
 public:
     Mesh mesh;
     ShaderManager shaderMgr;

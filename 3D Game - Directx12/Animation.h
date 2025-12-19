@@ -6,16 +6,18 @@
 
 #include "Maths.h"
 
-struct Bone
+using namespace std;
+
+struct Bone // A single bone in the skeleton
 {
-	std::string name;
+	string name;
 	Matrix offset;
 	int parentIndex;
 };
 
-struct Skeleton
+struct Skeleton // The skeleton holds all the bones
 {
-	std::vector<Bone> bones;
+	vector<Bone> bones;
 	Matrix globalInverse;
 	int findBone(std::string name)
 	{
@@ -30,16 +32,16 @@ struct Skeleton
 	}
 };
 
-struct AnimationFrame
+struct AnimationFrame // A single frame in an animation sequence which holds positions, rotations and scales for all bones
 {
-	std::vector<Vec3> positions;
-	std::vector<Quaternion> rotations;
-	std::vector<Vec3> scales;
+	vector<Vec3> positions;
+	vector<Quaternion> rotations;
+	vector<Vec3> scales;
 };
 
 struct AnimationSequence // This holds rescaled times
 {
-	std::vector<AnimationFrame> frames;
+	vector<AnimationFrame> frames;
 	float ticksPerSecond;
 	Vec3 interpolate(Vec3 p1, Vec3 p2, float t)
 	{
@@ -49,18 +51,18 @@ struct AnimationSequence // This holds rescaled times
 	{
 		return Quaternion::slerp(q1, q2, t);
 	}
-	float duration()
+	float duration() // gets the duration of the animation in seconds
 	{
 		return ((float)frames.size() / ticksPerSecond);
 	}
-	void calcFrame(float t, int& frame, float& interpolationFact)
+	void calcFrame(float t, int& frame, float& interpolationFact) // calculates the current frame and interpolation factor at time t
 	{
 		interpolationFact = t * ticksPerSecond;
 		frame = (int)floorf(interpolationFact);
 		interpolationFact = interpolationFact - (float)frame;
-		frame = std::min(frame, (int)(frames.size() - 1));
+		frame = min(frame, (int)(frames.size() - 1));
 	}
-	bool running(float t)
+	bool running(float t) // checks if the animation is still running at time t
 	{
 		if ((int)floorf(t * ticksPerSecond) < frames.size())
 		{
@@ -68,16 +70,16 @@ struct AnimationSequence // This holds rescaled times
 		}
 		return false;
 	}
-	int nextFrame(int frame)
+	int nextFrame(int frame) // gets the next frame index
 	{
-		return std::min(frame + 1, (int)(frames.size() - 1));
+		return min(frame + 1, (int)(frames.size() - 1));
 	}
-	Matrix interpolateBoneToGlobal(Matrix* matrices, int baseFrame, float interpolationFact, Skeleton* skeleton, int boneIndex)
+	Matrix interpolateBoneToGlobal(Matrix* matrices, int baseFrame, float interpolationFact, Skeleton* skeleton, int boneIndex) // this is taken from Tom's code. It basically interpolates the local matrix of a bone and then multiplies it by its parent's global matrix to get the global matrix
 	{
 		Matrix scale = Matrix::scaling3D(interpolate(frames[baseFrame].scales[boneIndex], frames[nextFrame(baseFrame)].scales[boneIndex], interpolationFact));
 		Matrix rotation = interpolate(frames[baseFrame].rotations[boneIndex], frames[nextFrame(baseFrame)].rotations[boneIndex], interpolationFact).toMatrix();
 		Matrix translation = Matrix::translation3D(interpolate(frames[baseFrame].positions[boneIndex], frames[nextFrame(baseFrame)].positions[boneIndex], interpolationFact));
-		Matrix local = scale * rotation * translation;
+		Matrix local = scale * rotation * translation; // the order matters here which is from right to left 
 		if (skeleton->bones[boneIndex].parentIndex > -1)
 		{
 			Matrix global = local * matrices[skeleton->bones[boneIndex].parentIndex];
@@ -87,20 +89,20 @@ struct AnimationSequence // This holds rescaled times
 	}
 };
 
-class Animation
+class Animation // The main animation class which holds all animation sequences and the skeleton
 {
 public:
-	std::map<std::string, AnimationSequence> animations;
+	map<string, AnimationSequence> animations;
 	Skeleton skeleton;
-	int bonesSize()
+	int bonesSize() // gets the number of bones in the skeleton
 	{
 		return skeleton.bones.size();
 	}
-	void calcFrame(std::string name, float t, int& frame, float& interpolationFact)
+	void calcFrame(std::string name, float t, int& frame, float& interpolationFact) // calculates the current frame and interpolation factor
 	{
 		animations[name].calcFrame(t, frame, interpolationFact);
 	}
-	Matrix interpolateBoneToGlobal(std::string name, Matrix* matrices, int baseFrame, float interpolationFact, int boneIndex)
+	Matrix interpolateBoneToGlobal(std::string name, Matrix* matrices, int baseFrame, float interpolationFact, int boneIndex)  // interpolates a bone to global space
 	{
 		return animations[name].interpolateBoneToGlobal(matrices, baseFrame, interpolationFact, &skeleton, boneIndex);
 	}
@@ -111,7 +113,7 @@ public:
 			matrices[i] = skeleton.bones[i].offset * matrices[i] * skeleton.globalInverse * coordTransform;
 		}
 	}
-	bool hasAnimation(std::string name)
+	bool hasAnimation(string name) // checks if the animation sequence exists
 	{
 		if (animations.find(name) == animations.end())
 		{
@@ -121,11 +123,11 @@ public:
 	}
 };
 
-class AnimationInstance
+class AnimationInstance // An instance of an animation which holds the current state of the animation
 {
 public:
 	Animation* animation;
-	std::string usingAnimation;
+	string usingAnimation;
 	float t;
 
 	bool loop = true;
@@ -134,34 +136,37 @@ public:
 	Matrix matricesPose[256];
 	Matrix coordTransform;
 
-	void init(Animation* _animation, int fromYZX)
+	void init(Animation* _animation, int fromYZX) // fromYZX = 1 if the model is in YZX format and needs to be rotated to XYZ
 	{
 		animation = _animation;
 		loop = true; 
 		if (fromYZX == 1)
 		{
-			coordTransform.rotationX(3.14159f);
+			coordTransform.rotationX(3.14159f); // we rotate the model -90 degrees around the x-axis to convert from YZX to XYZ
 		}
 		else
 		{
-			coordTransform = Matrix();
+			coordTransform = Matrix(); // we declare it as identity matrix
 		}
 	}
 
-	void update(std::string name, float dt)
+	void update(string name, float dt) // updates the animation 
 	{
-		if (name != usingAnimation)
+		if (name != usingAnimation) // if we are changing the animation 
 		{
-			usingAnimation = name;
-			t = 0;
+			usingAnimation = name; // we set the new animation
+			t = 0; // we reset the time
 		}
 
-		t += dt;
+		t += dt; // we advance the time
 
-		if (animation->animations.find(usingAnimation) == animation->animations.end()) return;
-		float duration = animation->animations[usingAnimation].duration();
-		if (duration <= 0.0f) return;
-
+		if (animation->animations.find(usingAnimation) == animation->animations.end()) { // if the animation doesn't exist
+			return;
+		}
+		float duration = animation->animations[usingAnimation].duration(); // we get the duration of the animation
+		if (duration <= 0.0f) {
+			return;
+		}
 		float frameTime = t;
 
 		if (t >= duration)
@@ -175,18 +180,20 @@ public:
 			{
 				frameTime = duration - 0.001f;
 
-				if (frameTime < 0.0f) frameTime = 0.0f;
+				if (frameTime < 0.0f) {
+					frameTime = 0.0f;
+				}
 			}
 		}
 
 		int frame = 0;
 		float interpolationFact = 0;
 
-		animation->calcFrame(name, frameTime, frame, interpolationFact);
+		animation->calcFrame(name, frameTime, frame, interpolationFact); // we calculate the current frame and interpolation factor
 
 		for (int i = 0; i < animation->bonesSize(); i++)
 		{
-			matrices[i] = animation->interpolateBoneToGlobal(name, matrices, frame, interpolationFact, i);
+			matrices[i] = animation->interpolateBoneToGlobal(name, matrices, frame, interpolationFact, i); // we calculate the global matrix for each bone
 		}
 		animation->calcTransforms(matrices, coordTransform);
 	}
@@ -196,7 +203,7 @@ public:
 		t = 0;
 	}
 
-	bool animationFinished()
+	bool animationFinished() // checks if the animation has finished
 	{
 		if (!loop && t > animation->animations[usingAnimation].duration())
 		{
@@ -205,10 +212,10 @@ public:
 		return false;
 	}
 
-	Matrix findWorldMatrix(std::string boneName)
+	Matrix findWorldMatrix(string boneName) // finds the world matrix of a specific bone at the current animation time
 	{
 		int boneID = animation->skeleton.findBone(boneName);
-		std::vector<int> boneChain;
+		vector<int> boneChain;
 		int ID = boneID;
 		while (ID != -1)
 		{

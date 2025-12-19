@@ -9,6 +9,8 @@
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3dcompiler.lib")
 
+// Core class which copied from the slides in the lecture
+
 class Barrier {
 public:
 	static void add(ID3D12Resource* res, D3D12_RESOURCE_STATES first, D3D12_RESOURCE_STATES second,

@@ -12,8 +12,10 @@ float4 PS(PSInput input) : SV_TARGET
 {
     float4 color = tex.Sample(sam, input.uv);
 
-    if (color.a < 0.1f)
+    if (color.a < 0.5f) // alpha testing threshold
         discard;
 
     return color;
 }
+
+// pixel shader for rendering grass with alpha testing

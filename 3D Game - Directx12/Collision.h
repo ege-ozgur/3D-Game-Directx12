@@ -4,15 +4,19 @@
 #include <cfloat>
 #include <algorithm>
 
-inline Vec3 MaxVec(const Vec3& a, const Vec3& b) {
-    return Vec3(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z));
+using namespace std;
+
+inline Vec3 MaxVec(const Vec3& a, const Vec3& b) { // maximum of two Vec3
+    return Vec3(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
 }
 
-inline Vec3 MinVec(const Vec3& a, const Vec3& b) {
-    return Vec3(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z));
+inline Vec3 MinVec(const Vec3& a, const Vec3& b) { // minimum of two Vec3
+    return Vec3(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
 }
 
-struct Ray
+// both ray and AABB classes were taken from slides provided in the lectures
+
+struct Ray // Ray structure with origin, direction, and inverse direction
 {
     Vec3 o;
     Vec3 dir;
@@ -32,7 +36,7 @@ struct Ray
     }
 };
 
-class AABB
+class AABB // Axis-Aligned Bounding Box class
 {
 public:
     Vec3 max;
@@ -64,8 +68,8 @@ public:
             (a.min.z <= b.max.z && a.max.z >= b.min.z);
     }
 
-    bool rayAABB(const Ray& r, float& t) const
-    {
+	bool rayAABB(const Ray& r, float& t) const // Ray-AABB intersection test
+	{ // what it does is to calculate the intersection of a ray with an axis-aligned bounding box (AABB) using the slab method
         float t1 = (min.x - r.o.x) * r.invdir.x;
         float t2 = (max.x - r.o.x) * r.invdir.x;
         float t3 = (min.y - r.o.y) * r.invdir.y;
@@ -73,8 +77,8 @@ public:
         float t5 = (min.z - r.o.z) * r.invdir.z;
         float t6 = (max.z - r.o.z) * r.invdir.z;
 
-        float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
-        float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+		float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6)); // entry point
+		float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6)); // exit point
 
         if (tmax < 0 || tmin > tmax) {
             t = tmax;

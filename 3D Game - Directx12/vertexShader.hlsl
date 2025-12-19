@@ -32,3 +32,5 @@ PS_INPUT VS(VS_INPUT input)
     
     return output;
 }
+
+// vertex shader for static meshes

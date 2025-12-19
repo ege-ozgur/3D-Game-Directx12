@@ -10,19 +10,19 @@
 
 using namespace std;
 
-struct ShaderVariable {
+struct ShaderVariable { // Represents a variable in a constant buffer
     string name;
     UINT offset;
     UINT size;
 };
 
-struct ConstantBufferLayout {
+struct ConstantBufferLayout { // Represents the layout of a constant buffer
     string name;
     UINT totalSize;
     unordered_map<string, ShaderVariable> variables;
 };
 
-class ShaderReflection {
+class ShaderReflection { // Shader reflection class to extract constant buffer layouts from compiled shaders
 public:
     static ConstantBufferLayout reflect(ID3DBlob* shader, const string& bufferName) {
         ConstantBufferLayout layout;
@@ -31,15 +31,11 @@ public:
 
         ID3D12ShaderReflection* reflector = nullptr;
 
-        HRESULT hr = D3DReflect(
-            shader->GetBufferPointer(),
-            shader->GetBufferSize(),
-            IID_PPV_ARGS(&reflector)
-        );
+        HRESULT hr = D3DReflect(shader->GetBufferPointer(), shader->GetBufferSize(),IID_PPV_ARGS(&reflector));
 
-        if (FAILED(hr) || !reflector)
-            return layout;
-
+        if (FAILED(hr) || !reflector) {
+			return layout;
+        }
         D3D12_SHADER_DESC shaderDesc = {};
         reflector->GetDesc(&shaderDesc);
 

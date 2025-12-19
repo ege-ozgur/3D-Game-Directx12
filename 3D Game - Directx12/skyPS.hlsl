@@ -7,13 +7,17 @@ struct PS_INPUT
     float3 LocalPos : POSITION;
 };
 
-static const float2 invAtan = float2(0.1591, 0.3183);
+static const float PI = 3.1415;
 
 float4 PS(PS_INPUT input) : SV_Target
 {
     float3 v = normalize(input.LocalPos);
     float2 uv = float2(atan2(v.z, v.x), asin(v.y));
-    uv *= invAtan;
+    
+    uv *= float2(0.5 / PI, 1.0 / PI); 
+    
     uv += 0.5;
     return gEquirectangularMap.Sample(gSampler, uv);
 }
+
+// pixel shader for rendering a skybox from an equirectangular environment map

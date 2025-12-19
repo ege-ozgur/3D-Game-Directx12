@@ -4,17 +4,19 @@
 #include "Texture.h"
 #include "Core.h"
 
-class TextureManager {
-public:
-    std::map<std::string, Texture*> textureCache;
+using namespace std;
 
-    ~TextureManager() {
+class TextureManager { // my simple texture manager to load and manage textures
+public:
+    map<string, Texture*> textureCache;
+
+	~TextureManager() { // destructor to release all loaded textures
         for (auto const& [key, val] : textureCache) {
             delete val;
         }
     }
 
-    void load(Core* core, std::string filename) {
+	void load(Core* core, std::string filename) { // load a texture if not already loaded
         if (textureCache.find(filename) != textureCache.end()) {
             return;
         }
@@ -26,7 +28,7 @@ public:
     }
 
 
-    int find(std::string filename) {
+	int find(string filename) { // find a texture by its filename and return its heap offset or -1 if not found
         if (textureCache.find(filename) != textureCache.end()) {
             return textureCache[filename]->heapOffset;
         }

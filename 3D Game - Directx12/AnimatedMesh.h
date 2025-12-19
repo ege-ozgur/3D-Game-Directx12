@@ -13,57 +13,65 @@
 #include "ShaderReflection.h" 
 #include "TextureManager.h"
 
+using namespace std;
+
+// animated mesh consisting of multiple sub-meshes and an animation
 class AnimatedMesh
 {
 public:
-    std::vector<Mesh*> meshes;
+    vector<Mesh*> meshes; 
     Animation animation;
-    std::vector<std::string> textureFilenames;
+    vector<std::string> textureFilenames;
     ConstantBuffer* cBuffer = nullptr;
 
-    AnimatedMesh() = default;
+	AnimatedMesh() = default; // default constructor
 
+	// we disable copy constructor and assignment operator as shallow copy might cause double deletion
     AnimatedMesh(const AnimatedMesh&) = delete;
     AnimatedMesh& operator=(const AnimatedMesh&) = delete;
 
-    ~AnimatedMesh() {
-        if (cBuffer) delete cBuffer;
-        for (auto m : meshes) delete m;
+	~AnimatedMesh() { // destructor
+        if (cBuffer) {
+            delete cBuffer;
+        }
+        for (auto m : meshes) {
+            delete m;
+        }
     }
 
-    void load(Core* core, std::string filename, PSOManager* psos, ShaderManager* shaderMgr, TextureManager* textureMgr)
-    {
+	void load(Core* core, std::string filename, PSOManager* psos, ShaderManager* shaderMgr, TextureManager* textureMgr) { // it loads the model and the animation from a GEM file 
         GEMLoader::GEMModelLoader loader;
-        std::vector<GEMLoader::GEMMesh> gemmeshes;
+        vector<GEMLoader::GEMMesh> gemmeshes;
         GEMLoader::GEMAnimation gemanimation;
-        loader.load(filename, gemmeshes, gemanimation);
+		loader.load(filename, gemmeshes, gemanimation); // it reads the GEM file, meshes and animation
 
         for (int i = 0; i < gemmeshes.size(); i++)
         {
             Mesh* mesh = new Mesh();
-            std::vector<ANIMATED_VERTEX> vertices;
-            for (int j = 0; j < gemmeshes[i].verticesAnimated.size(); j++)
+            vector<ANIMATED_VERTEX> vertices;
+			for (int j = 0; j < gemmeshes[i].verticesAnimated.size(); j++) // we copy the vertices to the local engine format
             {
                 ANIMATED_VERTEX v;
                 memcpy(&v, &gemmeshes[i].verticesAnimated[j], sizeof(ANIMATED_VERTEX));
                 vertices.push_back(v);
             }
 
-            string texName = gemmeshes[i].material.find("albedo").getValue();
-            textureFilenames.push_back(texName);
+			string texName = gemmeshes[i].material.find("albedo").getValue(); // we get the texture filename from the material which named as albedo
+			textureFilenames.push_back(texName); // we store the texture filename to use it later during drawing
 
-            textureMgr->load(core, texName);
+			textureMgr->load(core, texName); // we load the texture to the CPU
 
             mesh->init(core, vertices, gemmeshes[i].indices);
             meshes.push_back(mesh);
         }
 
+		// we create the PSO for animated models using the appropriate shaders and vertex layout for animated models
         ID3DBlob* vsBlob = shaderMgr->loadVS("AnimatedModelVS", "animVertexShader.hlsl");
         ID3DBlob* psBlob = shaderMgr->loadPS("AnimatedModelPS", "animPixelShader.hlsl");
 
-        psos->createPSO(core, "AnimatedModelPSO", vsBlob, psBlob, VertexLayoutCache::getAnimatedLayout());
+		psos->createPSO(core, "AnimatedModelPSO", vsBlob, psBlob, VertexLayoutCache::getAnimatedLayout()); // we create the PSO for animated models
 
-        ConstantBufferLayout reflectLayout = ShaderReflection::reflect(vsBlob, "staticMeshBuffer");
+		ConstantBufferLayout reflectLayout = ShaderReflection::reflect(vsBlob, "staticMeshBuffer"); // we reflect the constant buffer layout from the vertex shader
 
         ConstantBufferDescription cbDesc(reflectLayout.name);
         cbDesc.totalSize = reflectLayout.totalSize;
@@ -76,11 +84,11 @@ public:
             cbDesc.constantBufferData[kv.first] = var;
         }
 
-        cBuffer = new ConstantBuffer();
+		cBuffer = new ConstantBuffer(); // we create the constant buffer for animated models
         cBuffer->init(core, cbDesc);
 
-        memcpy(&animation.skeleton.globalInverse, &gemanimation.globalInverse, 16 * sizeof(float));
-        for (int i = 0; i < gemanimation.bones.size(); i++)
+        memcpy(&animation.skeleton.globalInverse, &gemanimation.globalInverse, 16 * sizeof(float)); //
+		for (int i = 0; i < gemanimation.bones.size(); i++) // we copy the bones to the local engine format
         {
             Bone bone;
             bone.name = gemanimation.bones[i].name;
@@ -88,7 +96,7 @@ public:
             bone.parentIndex = gemanimation.bones[i].parentIndex;
             animation.skeleton.bones.push_back(bone);
         }
-        for (int i = 0; i < gemanimation.animations.size(); i++)
+		for (int i = 0; i < gemanimation.animations.size(); i++) // we copy the animation sequences to the local engine format
         {
             std::string name = gemanimation.animations[i].name;
             AnimationSequence aseq;
@@ -112,27 +120,27 @@ public:
         }
     }
 
-    void draw(Core* core, PSOManager* psos, ShaderManager* shaderMgr, TextureManager* textures, AnimationInstance* instance, Matrix& vp, Matrix& w)
+	void draw(Core* core, PSOManager* psos, ShaderManager* shaderMgr, TextureManager* textures, AnimationInstance* instance, Matrix& vp, Matrix& w) // it draws the animated mesh
     {
-        psos->bind(core, "AnimatedModelPSO");
+		psos->bind(core, "AnimatedModelPSO"); // we bind the PSO for animated models
 
-        cBuffer->update("W", &w, sizeof(Matrix));
-        cBuffer->update("VP", &vp, sizeof(Matrix));
+		cBuffer->update("W", &w, sizeof(Matrix)); // we update the world matrix
+		cBuffer->update("VP", &vp, sizeof(Matrix)); // we update the view-projection matrix
 
         size_t boneDataSize = sizeof(instance->matrices);
-        cBuffer->update("bones", instance->matrices, boneDataSize);
+		cBuffer->update("bones", instance->matrices, boneDataSize); // we update the bone matrices
 
         core->getCommandList()->SetGraphicsRootConstantBufferView(0, cBuffer->getGPUAddress());
 
-        for (int i = 0; i < meshes.size(); i++)
+		for (int i = 0; i < meshes.size(); i++) // we draw each sub-mesh
         {
             int textureIndex = textures->find(textureFilenames[i]);
             if (textureIndex != -1) {
-                shaderMgr->updateTexturePS(core, "AnimatedModelPS", "tex", textureIndex);
+				shaderMgr->updateTexturePS(core, "AnimatedModelPS", "tex", textureIndex); // we bind the texture to the pixel shader
             }
-            meshes[i]->draw(core);
+			meshes[i]->draw(core); // we draw the sub-mesh
         }
 
-        cBuffer->next();
+		cBuffer->next(); // we move to the next constant buffer instance
     }
 };

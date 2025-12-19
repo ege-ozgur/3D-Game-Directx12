@@ -5,7 +5,7 @@
 #include "Vertex.h"
 using namespace std;
 
-class Mesh {
+class Mesh { // Mesh class to handle vertex and index buffers. Used for sphere to create bullets.
 public:
     ID3D12Resource* vertexBuffer = nullptr;
     ID3D12Resource* indexBuffer = nullptr;
@@ -15,7 +15,7 @@ public:
 
     Mesh() = default;
 
-    ~Mesh() {
+	~Mesh() { // destructor to release resources
         if (vertexBuffer) {
             vertexBuffer->Release();
             vertexBuffer = nullptr; 
@@ -30,7 +30,7 @@ public:
     Mesh& operator=(const Mesh&) = delete;
 
     template<typename VERTEX_TYPE>
-    void init(Core* core,const std::vector<VERTEX_TYPE>& vertices,const std::vector<unsigned int>& indices) {
+	void init(Core* core, const std::vector<VERTEX_TYPE>& vertices, const std::vector<unsigned int>& indices) { // initialize the mesh with given vertices and indices
         int vBufferSize = sizeof(VERTEX_TYPE) * vertices.size();
 
         D3D12_HEAP_PROPERTIES heapProps = {};
@@ -89,7 +89,7 @@ public:
         numMeshIndices = (int)indices.size();
     }
 
-    void draw(Core* core) {
+	void draw(Core* core) { // draw function to issue draw call
         auto cmd = core->getCommandList();
         cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         cmd->IASetVertexBuffers(0, 1, &vbView);
@@ -98,7 +98,7 @@ public:
     }
 };
 
-inline STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv) {
+inline STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv) { // helper function to create a STATIC_VERTEX
     STATIC_VERTEX v;
     v.pos = p; v.normal = n; v.tangent = Vec3(0, 0, 0); v.tu = tu; v.tv = tv;
     return v;

@@ -28,3 +28,5 @@ PSInput VS(VSInput input)
 
     return output;
 }
+
+// vertex shader for static meshes

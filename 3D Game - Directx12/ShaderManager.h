@@ -13,19 +13,21 @@ using namespace std;
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dxguid.lib")
 
-class ShaderManager {
+class ShaderManager { // A simple shader manager to load, compile, and manage shaders along with their resource binding points.
 public:
-    std::unordered_map<std::string, ID3DBlob*> shaders;
-    std::unordered_map<std::string, std::map<std::string, int>> shaderBindMaps;
+    unordered_map<string, ID3DBlob*> shaders;
+    unordered_map<string, map<string, int>> shaderBindMaps;
 
-    ~ShaderManager() {
-        for (auto& p : shaders) {
-            if (p.second) p.second->Release();
+	~ShaderManager() { // Release all loaded shaders
+        for (auto& p : shaders) { 
+            if (p.second) {
+				p.second->Release(); // Release the shader blob if exists
+            }
         }
     }
 
-    string loadFile(const std::string& filename) {
-        std::ifstream file(filename, std::ios::binary);
+	string loadFile(const std::string& filename) { // Load shader code from a file, removing BOM if present
+        ifstream file(filename, std::ios::binary);
         if (!file.is_open()) {
             OutputDebugStringA(("Cannot open shader: " + filename + "\n").c_str());
             return "";
@@ -46,7 +48,7 @@ public:
         return code;
     }
 
-    ID3DBlob* compile(const std::string& name, const std::string& file, const std::string& entry, const std::string& target) {
+	ID3DBlob* compile(const std::string& name, const std::string& file, const std::string& entry, const std::string& target) { // Compile a shader and reflect its resource bindings
         std::string code = loadFile(file);
         if (code.empty()) return nullptr;
 
@@ -75,7 +77,7 @@ public:
             D3D12_SHADER_DESC desc;
             reflection->GetDesc(&desc);
 
-            std::map<std::string, int> localBindPoints;
+            map<string, int> localBindPoints;
 
             for (unsigned int i = 0; i < desc.BoundResources; i++)
             {
@@ -96,28 +98,28 @@ public:
         return blob;
     }
 
-    ID3DBlob* loadVS(const std::string& name, const std::string& path) {
+	ID3DBlob* loadVS(const string& name, const string& path) { // Load and compile a vertex shader
         if (shaders.count(name))
             return shaders[name];
 
         return shaders[name] = compile(name, path, "VS", "vs_5_0");
     }
 
-    ID3DBlob* loadPS(const std::string& name, const std::string& path) {
+	ID3DBlob* loadPS(const string& name, const string& path) { // Load and compile a pixel shader
         if (shaders.count(name))
             return shaders[name];
 
         return shaders[name] = compile(name, path, "PS", "ps_5_0");
     }
 
-    void updateTexturePS(Core* core, std::string shaderName, std::string textureName, int textureHeapIndex) {
+	void updateTexturePS(Core* core, string shaderName, string textureName, int textureHeapIndex) { // Bind a texture to the pixel shader
         int bindPoint = getBindPoint(shaderName, textureName);
 
         if (textureHeapIndex == -1) {
             return;
         }
 
-        if (bindPoint == -1) {
+		if (bindPoint == -1) { // -1 means not found
             OutputDebugStringA(("Texture bind point not found: " + textureName + "\n").c_str());
             return;
         }
@@ -135,7 +137,7 @@ public:
         core->getCommandList()->SetGraphicsRootDescriptorTable(2, handle);
     }
 
-    int getBindPoint(const std::string& shaderName, const std::string& textureName) {
+	int getBindPoint(const std::string& shaderName, const std::string& textureName) { // Get the binding point of a texture in a shader
         if (shaderBindMaps.count(shaderName) && shaderBindMaps[shaderName].count(textureName)) {
             return shaderBindMaps[shaderName][textureName];
         }

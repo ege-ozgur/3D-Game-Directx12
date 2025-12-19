@@ -15,14 +15,14 @@
 #include <cstdlib> 
 #include <ctime>  
 
-struct GrassInstanceData
-{
+using namespace std;
+
+struct GrassInstanceData { // Per-instance data for grass
     Matrix world;
 };
 
-class Grass
-{
-private:
+class Grass { // the grass system which is done by instancing
+public:
     Mesh* grassMesh = nullptr;
 
     ID3D12Resource* instanceBuffer = nullptr;
@@ -31,49 +31,56 @@ private:
     ConstantBuffer* sceneCB = nullptr;
 
     int numInstances = 0;
-    int textureID = -1;
-    std::string textureFilename;
+	int textureID = -1; // texture ID for the grass texture -1 means no texture
+    string textureFilename;
 
-    std::string psoName = "GrassPSO";
-    std::string vsName = "GrassVS";
-    std::string psName = "GrassPS";
+	string psoName = "GrassPSO"; // we name the PSO, VS and PS
+    string vsName = "GrassVS";
+    string psName = "GrassPS";
 
-public:
     Grass() = default;
-    Grass(const Grass&) = delete;
+	Grass(const Grass&) = delete; // prevent copy constructor
     Grass& operator=(const Grass&) = delete;
 
-    ~Grass()
+	~Grass() // destructor to release resources
     {
-        if (sceneCB) { delete sceneCB; sceneCB = nullptr; }
-        if (grassMesh) { delete grassMesh; grassMesh = nullptr; }
-        if (instanceBuffer) { instanceBuffer->Release(); instanceBuffer = nullptr; }
+        if (sceneCB) { 
+            delete sceneCB; sceneCB = nullptr; 
+        }
+        if (grassMesh) { 
+            delete grassMesh; grassMesh = nullptr; 
+        }
+        if (instanceBuffer) { 
+            instanceBuffer->Release(); instanceBuffer = nullptr; 
+        }
     }
 
+	// create the grass mesh from a GEM mesh
     void init(Core* core,ShaderManager* sm,PSOManager* psoMgr,TextureManager* tm,int count,const std::string& gemPath,float areaHalfSize = 50.0f)
     {
         numInstances = count;
 
         GEMLoader::GEMModelLoader loader;
-        std::vector<GEMLoader::GEMMesh> gemmeshes;
+        vector<GEMLoader::GEMMesh> gemmeshes;
         loader.load(gemPath, gemmeshes);
 
-        if (gemmeshes.empty()) return;
+        if (gemmeshes.empty()) {
+            return;
+        }
 
         createGrassMesh(core, gemmeshes[0]);
 
-        std::string texName = gemmeshes[0].material.find("albedo").getValue();
+		string texName = gemmeshes[0].material.find("albedo").getValue(); // we find the albedo texture from the GEM material
         if (!texName.empty()) {
-            textureFilename = texName;
+			textureFilename = texName; // we set the texture filename
             tm->load(core, textureFilename);
             textureID = tm->find(textureFilename);
         }
 
-        ID3DBlob* vs = sm->loadVS(vsName, "grassVS.hlsl");
+		ID3DBlob* vs = sm->loadVS(vsName, "grassVS.hlsl"); // load the shaders for grass
         ID3DBlob* ps = sm->loadPS(psName, "grassPS.hlsl");
 
-        D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-        {
+		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = { // input layout for grass with per-instance data for instancing
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -98,9 +105,9 @@ public:
         rasterDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
         rasterDesc.DepthClipEnable = TRUE;
 
-        psoMgr->createPSO(core, psoName, vs, ps, inputLayout, &rasterDesc);
+		psoMgr->createPSO(core, psoName, vs, ps, inputLayout, &rasterDesc); // we create the PSO
 
-        ConstantBufferLayout reflectLayout = ShaderReflection::reflect(vs, "SceneConstantBuffer");
+		ConstantBufferLayout reflectLayout = ShaderReflection::reflect(vs, "SceneConstantBuffer"); // reflect the constant buffer layout from the vertex shader
         ConstantBufferDescription cbDesc(reflectLayout.name);
         cbDesc.totalSize = reflectLayout.totalSize;
         for (auto& kv : reflectLayout.variables) {
@@ -112,17 +119,17 @@ public:
         sceneCB = new ConstantBuffer();
         sceneCB->init(core, cbDesc);
 
-        std::srand((unsigned)std::time(nullptr));
-        std::vector<GrassInstanceData> instances;
+        srand((unsigned)time(nullptr));
+        vector<GrassInstanceData> instances;
         instances.reserve(numInstances);
 
-        for (int i = 0; i < numInstances; i++)
+		for (int i = 0; i < numInstances; i++) // generate random positions, rotations and scales for the grass instances
         {
             float x = ((float)std::rand() / RAND_MAX) * (2.0f * areaHalfSize) - areaHalfSize;
             float z = ((float)std::rand() / RAND_MAX) * (2.0f * areaHalfSize) - areaHalfSize;
 
-            float rotY = ((float)std::rand() / RAND_MAX) * 3.14159f * 2.0f;
-            float scale = 0.6f + ((float)std::rand() / RAND_MAX) * 0.8f;
+            float rotY = ((float)rand() / RAND_MAX) * 3.14159f * 2.0f;
+            float scale = 0.6f + ((float)rand() / RAND_MAX) * 0.8f;
 
             Matrix S, R, T;
             S.scaling(Vec3(scale, scale, scale));
@@ -132,7 +139,7 @@ public:
             Matrix world = S * R * T;
 
             Matrix worldTransposed;
-            for (int r = 0; r < 4; ++r) {
+			for (int r = 0; r < 4; ++r) { // transpose the matrix for HLSL file
                 for (int c = 0; c < 4; ++c) {
                     worldTransposed.m[r * 4 + c] = world.m[c * 4 + r];
                 }
@@ -147,44 +154,41 @@ public:
         createInstanceBuffer(core, instances);
     }
 
-    void draw(Core* core,
-        PSOManager* psoMgr,
-        ShaderManager* sm,
-        TextureManager* tm,
-        const Matrix& vp)
-    {
-        if (!grassMesh || !instanceBuffer || !sceneCB)
+	void draw(Core* core, PSOManager* psoMgr, ShaderManager* sm, TextureManager* tm, const Matrix& vp) { // draw the grass
+		if (!grassMesh || !instanceBuffer || !sceneCB) { // check if any of these are initialized
             return;
+        }
+           
+		auto commandList = core->getCommandList(); // get the command list
 
-        auto cl = core->getCommandList();
+		psoMgr->bind(core, psoName); // we bind the PSO to the pipeline
 
-        psoMgr->bind(core, psoName);
+		sceneCB->update("VP", (void*)&vp, sizeof(Matrix)); // we update the constant buffer with the view-projection matrix
+        commandList->SetGraphicsRootConstantBufferView(0, sceneCB->getGPUAddress());
 
-        sceneCB->update("VP", (void*)&vp, sizeof(Matrix));
-        cl->SetGraphicsRootConstantBufferView(0, sceneCB->getGPUAddress());
-
-        if (textureID != -1)
-            sm->updateTexturePS(core, psName, "tex", textureID);
-
+		if (textureID != -1) { // if we have a texture we bind it. -1 means no texture
+			sm->updateTexturePS(core, psName, "tex", textureID); // we bind the texture to the pixel shader. tex is the name of the texture variable in the shader
+        }
+            
         D3D12_VERTEX_BUFFER_VIEW views[2];
         views[0] = grassMesh->vbView;
         views[1] = instanceView;
 
-        cl->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        cl->IASetVertexBuffers(0, 2, views);
-        cl->IASetIndexBuffer(&grassMesh->ibView);
+        commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        commandList->IASetVertexBuffers(0, 2, views);
+        commandList->IASetIndexBuffer(&grassMesh->ibView);
 
-        cl->DrawIndexedInstanced(grassMesh->numMeshIndices, numInstances, 0, 0, 0);
+        commandList->DrawIndexedInstanced(grassMesh->numMeshIndices, numInstances, 0, 0, 0);
 
         sceneCB->next();
     }
 
-    void createGrassMesh(Core* core, const GEMLoader::GEMMesh& gm)
+	void createGrassMesh(Core* core, const GEMLoader::GEMMesh& gm) // creation of the grass mesh from a GEM mesh
     {
         std::vector<STATIC_VERTEX> v;
         v.reserve(gm.verticesStatic.size());
 
-        for (int i = 0; i < (int)gm.verticesStatic.size(); i++)
+		for (int i = 0; i < (int)gm.verticesStatic.size(); i++) // Here we copy the GEM static vertices to our STATIC_VERTEX structure
         {
             STATIC_VERTEX sv;
             memcpy(&sv, &gm.verticesStatic[i], sizeof(STATIC_VERTEX));

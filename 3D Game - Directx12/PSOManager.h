@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class PSOManager {
+class PSOManager { // A Pipeline State Object manager to create and store PSOs along with their associated constant buffer layouts and buffers. Code based on the lecture slides.
 public:
     unordered_map<string, ID3D12PipelineState*> psos;
 
@@ -196,15 +196,23 @@ public:
 
     ConstantBuffer* getVSConstantBuffer(const string& name, size_t index = 0) {
         auto it = vsBuffers.find(name);
-        if (it == vsBuffers.end()) return nullptr;
-        if (index >= it->second.size()) return nullptr;
+        if (it == vsBuffers.end()) {
+            return nullptr;
+        }
+        if (index >= it->second.size()) {
+            return nullptr;
+        }
         return it->second[index];
     }
 
     ConstantBuffer* getPSConstantBuffer(const string& name, size_t index = 0) {
         auto it = psBuffers.find(name);
-        if (it == psBuffers.end()) return nullptr;
-        if (index >= it->second.size()) return nullptr;
+        if (it == psBuffers.end()) {
+            return nullptr;
+        }
+        if (index >= it->second.size()) {
+            return nullptr;
+        }
         return it->second[index];
     }
 
@@ -226,7 +234,7 @@ public:
         }
     }
 
-    ~PSOManager() {
+	~PSOManager() { // Release all PSOs and delete constant buffers
         for (auto& pair : psos) {
             if (pair.second) {
                 pair.second->Release();

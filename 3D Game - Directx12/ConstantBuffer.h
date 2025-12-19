@@ -5,13 +5,13 @@
 #include <string>
 using namespace std;
 
-struct ConstantBufferVariable
+struct ConstantBufferVariable // A variable inside a constant buffer
 {
 	unsigned int offset;
 	unsigned int size;
 };
 
-class ConstantBufferDescription
+class ConstantBufferDescription // Description of a constant buffer layout
 {
 public:
 	string name;
@@ -22,11 +22,10 @@ public:
 
 	ConstantBufferDescription(const string& cbName)
 		: name(cbName), totalSize(0)
-	{
-	}
+	{}
 };
 
-class ConstantBuffer
+class ConstantBuffer // A constant buffer that can hold multiple instances
 {
 public:
     ID3D12Resource* resource = nullptr;
@@ -40,7 +39,7 @@ public:
 
     ConstantBuffer() {}
 
-    void init(Core* core, const ConstantBufferDescription& desc, unsigned int _maxInstances = 1024) {
+	void init(Core* core, const ConstantBufferDescription& desc, unsigned int _maxInstances = 1024) { // It has the max distances default to 1024 instances
         layout = desc;
 
         cbSizeInBytes = (layout.totalSize + 255) & ~255;
@@ -73,9 +72,9 @@ public:
             IID_PPV_ARGS(&resource)
         );
 
-        if (FAILED(hr))
+		if (FAILED(hr)) // Check for failure
         {
-            OutputDebugStringA("ConstantBuffer::init - CreateCommittedResource FAILED\n");
+			OutputDebugStringA("ConstantBuffer::init - CreateCommittedResource FAILED\n"); // if it fails we output debug string
             return;
         }
 
@@ -87,10 +86,11 @@ public:
         }
     }
 
-    void update(const string& varName, const void* data, size_t dataSize = 0)
+	void update(const string& varName, const void* data, size_t dataSize = 0) // Updates a variable in the constant buffer
     {
-        if (!buffer) return;
-
+        if (!buffer) {
+            return;
+        }
         auto it = layout.constantBufferData.find(varName);
         if (it == layout.constantBufferData.end())
         {
@@ -104,21 +104,24 @@ public:
         memcpy(dst, data, bytes);
     }
 
-    void nextInstance()
+	void nextInstance() // Moves to the next instance in the buffer
     {
         offsetIndex = (offsetIndex + 1) % maxInstances;
     }
 
-    D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const
+	D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const // Gets the GPU virtual address for the current instance
     {
-        if (!resource) return 0;
+        if (!resource) {
+            return 0;
+        }
         return resource->GetGPUVirtualAddress() + static_cast<D3D12_GPU_VIRTUAL_ADDRESS>(offsetIndex) * cbSizeInBytes;
     }
 
-    void next()
+	void next() // Advances to the next instance, wrapping around if necessary
     {
         offsetIndex++;
-        if (offsetIndex >= maxInstances)
-            offsetIndex = 0;
+        if (offsetIndex >= maxInstances) {
+			offsetIndex = 0;
+        }
     }
 };

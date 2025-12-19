@@ -33,15 +33,17 @@ PS_INPUT VS(VS_INPUT input)
     transform += bones[input.BoneIDs[1]] * input.BoneWeights[1];
     transform += bones[input.BoneIDs[2]] * input.BoneWeights[2];
     transform += bones[input.BoneIDs[3]] * input.BoneWeights[3];
-    output.Pos = mul(pos, transform);
-    output.Pos = mul(output.Pos, W);
-    output.Pos = mul(output.Pos, VP);
-    output.Normal = mul(input.Normal, (float3x3) transform);
-    output.Normal = mul(output.Normal, (float3x3) W);
-    output.Normal = normalize(output.Normal);
-    output.Tangent = mul(input.Tangent, (float3x3) transform);
-    output.Tangent = mul(output.Tangent, (float3x3) W);
-    output.Tangent = normalize(output.Tangent);
-    output.TexCoords = input.TexCoords;
-    return output;
+    output.Pos = mul(pos, transform); // model space to world space
+    output.Pos = mul(output.Pos, W); // world space to view space
+    output.Pos = mul(output.Pos, VP); // view space to projection space
+    output.Normal = mul(input.Normal, (float3x3) transform); // transform normal to world space
+    output.Normal = mul(output.Normal, (float3x3) W); // transform normal to view space
+    output.Normal = normalize(output.Normal); // normalize normal
+    output.Tangent = mul(input.Tangent, (float3x3) transform); // transform tangent to world space
+    output.Tangent = mul(output.Tangent, (float3x3) W); // transform tangent to view space
+    output.Tangent = normalize(output.Tangent); // normalize tangent
+    output.TexCoords = input.TexCoords; // pass through texture coordinates
+    return output; // return output to pixel shader
 }
+
+//vertex shader for animated models

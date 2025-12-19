@@ -13,7 +13,7 @@ float4 PS(PS_INPUT input) : SV_Target0
 {
     float4 albedo = tex.Sample(sam, input.TexCoords);
 
-    if (albedo.a < 0.5f)
+    if (albedo.a < 0.5f) // we use this for the leaves on the trees
     {
         discard;
     }
