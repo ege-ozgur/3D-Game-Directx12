@@ -30,6 +30,7 @@ extern "C" {
 class Timer { // simple timer class to calculate delta time between frames
 public:
     std::chrono::steady_clock::time_point last;
+    std::chrono::steady_clock::time_point start;
     Timer() { last = std::chrono::steady_clock::now(); }
 
     void reset() { last = std::chrono::steady_clock::now(); }
@@ -38,6 +39,12 @@ public:
         auto now = std::chrono::steady_clock::now();
         std::chrono::duration<float> diff = now - last;
         last = now;
+        return diff.count();
+    }
+
+    float totalTime() {
+        auto now = std::chrono::steady_clock::now();
+        std::chrono::duration<float> diff = now - start;
         return diff.count();
     }
 };
@@ -223,6 +230,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	float currentLevelTimer = 0.0f; // timer for level transition
 	bool isLevelFinished = false; // to check if the level is finished
 
+	int frameCount = 0; // for FPS calculation
+    float timeElapsed = 0.0f;
+
 	while (true) // the main game loop starts here
     {
 		core.beginFrame(); // we begin the frame rendering
@@ -235,6 +245,23 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
         core.beginRenderPass();
 
 		float dt = tim.dt(); // we get the delta time since last frame
+		float totalTime = tim.totalTime(); // for the wind effect in grass we get the total elapsed time
+
+		frameCount++; // we count frames for FPS calculation
+        timeElapsed += dt;
+
+        if (timeElapsed >= 1.0f) {
+            float fps = (float)frameCount;          
+            float mspf = 1000.0f / fps;           
+
+            string fpsString = "Game Scene - FPS: " + to_string((int)fps) +
+                " | Frame Time: " + to_string(mspf) + " ms";
+
+            SetWindowTextA(win.hwnd, fpsString.c_str());
+
+            frameCount = 0;
+            timeElapsed = 0.0f;
+        }
 
 		player.update(dt, &win, obstacles, enemyMgr.getEnemies()); // we update the player with input, obstacles and enemies for collision detection
 		playerAnimMgr.update(dt, player, obstacles, enemyMgr.getEnemies()); // we update the player animation manager with player state and collisions
@@ -300,7 +327,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		planeModel.draw(&core, worldPlane, vp, &texMgr); // we draw the ground plane
 
 		if (grassSystem) { // we draw the grass system if it is initialized
-            grassSystem->draw(&core, &psoMgr, &shaderMgr, &texMgr, vp);
+            grassSystem->draw(&core, &psoMgr, &shaderMgr, &texMgr, vp, totalTime);
         }
 
 		for (int i = 0; i < staticRenderList.size(); i++) { // we draw all static mesh render items in the level

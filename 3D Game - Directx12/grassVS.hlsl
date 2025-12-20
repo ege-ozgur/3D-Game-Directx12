@@ -1,6 +1,8 @@
 cbuffer SceneConstantBuffer : register(b0)
 {
     matrix VP;
+    float gTime; 
+    float3 padding; 
 };
 
 struct VSInput
@@ -23,13 +25,19 @@ struct PSInput
 PSInput VS(VSInput input)
 {
     PSInput output;
+    float heightFactor = input.position.y;
+    float windStrength = 0.2f; // Rthe power of the wind
+    float windSpeed = 2.0f; // the speed of the wind
+    
+    // formula for the wind
+    float sway = sin(gTime * windSpeed + input.World[3][0]) * windStrength * heightFactor;
 
-    float4 worldPos = mul(float4(input.position, 1.0f), input.World); 
+    input.position.x += sway;
+
+    float4 worldPos = mul(float4(input.position, 1.0f), input.World);
     output.position = mul(worldPos, VP);
     output.uv = input.uv;
     output.normal = mul(input.normal, (float3x3) input.World);
 
     return output;
 }
-
-// vertex shader for instanced static meshes

@@ -154,22 +154,25 @@ public:
         createInstanceBuffer(core, instances);
     }
 
-	void draw(Core* core, PSOManager* psoMgr, ShaderManager* sm, TextureManager* tm, const Matrix& vp) { // draw the grass
-		if (!grassMesh || !instanceBuffer || !sceneCB) { // check if any of these are initialized
+    void draw(Core* core, PSOManager* psoMgr, ShaderManager* sm, TextureManager* tm, const Matrix& vp, float time) { // draw the grass
+        if (!grassMesh || !instanceBuffer || !sceneCB) { // check if any of these are initialized
             return;
         }
-           
-		auto commandList = core->getCommandList(); // get the command list
 
-		psoMgr->bind(core, psoName); // we bind the PSO to the pipeline
+        auto commandList = core->getCommandList(); // get the command list
 
-		sceneCB->update("VP", (void*)&vp, sizeof(Matrix)); // we update the constant buffer with the view-projection matrix
+        psoMgr->bind(core, psoName); // we bind the PSO to the pipeline
+
+        sceneCB->update("VP", (void*)&vp, sizeof(Matrix)); // we update the constant buffer with the view-projection matrix
+
+        sceneCB->update("gTime", &time, sizeof(float)); // we update the time variable in the constant buffer for the wind animation
+
         commandList->SetGraphicsRootConstantBufferView(0, sceneCB->getGPUAddress());
 
-		if (textureID != -1) { // if we have a texture we bind it. -1 means no texture
-			sm->updateTexturePS(core, psName, "tex", textureID); // we bind the texture to the pixel shader. tex is the name of the texture variable in the shader
+        if (textureID != -1) { // if we have a texture we bind it. -1 means no texture
+            sm->updateTexturePS(core, psName, "tex", textureID); // we bind the texture to the pixel shader. tex is the name of the texture variable in the shader
         }
-            
+
         D3D12_VERTEX_BUFFER_VIEW views[2];
         views[0] = grassMesh->vbView;
         views[1] = instanceView;
