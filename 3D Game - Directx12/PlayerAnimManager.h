@@ -98,6 +98,7 @@ public:
                 }
             }
 			else if (player.isMoving) { // if the player is moving we set the desired state to run. 
+                desiredState = PlayerState::RUN;
             }
 
 			if (desiredState != currentState) { // if the desired state is different from the current state we change the animation
